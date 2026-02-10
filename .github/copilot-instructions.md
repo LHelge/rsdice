@@ -119,10 +119,10 @@ This runs `wasm-pack build` against the `game` crate in release mode and outputs
 
 ## Database
 
-- **Engine**: PostgreSQL 18 (Docker Compose in `backend/compose.yml`).
+- **Engine**: PostgreSQL 18 (Docker Compose in `compose.yml`).
 - **Migrations**: SQLx migrations in `backend/migrations/`. Run with `sqlx migrate run`.
 - **Naming**: Snake-case table and column names. UUID primary keys.
-- **Local development**: The PostgreSQL container must be running when building locally or preparing SQLx statements. Start it with `docker compose -f backend/compose.yml up -d`.
+- **Local development**: The PostgreSQL container must be running when building locally or preparing SQLx statements. Start it with `docker compose up -d`.
 - **Offline mode**: After making changes to any database queries, run `cargo sqlx prepare -p backend` to regenerate the query metadata. This allows CI to build with `SQLX_OFFLINE=true` without a live database connection.
 
 ---
