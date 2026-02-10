@@ -35,7 +35,7 @@ rsdice/                 # Cargo workspace (resolver = "3")
 ### 1. Start the database
 
 ```sh
-docker compose -f backend/compose.yml up -d
+docker compose up -d
 ```
 
 ### 2. Run database migrations
@@ -107,3 +107,54 @@ cargo add <crate> -p <package>
 ## License
 
 See [LICENSE](LICENSE) for details.
+
+## Deployment
+
+Pull the latest release images from the GitHub Container Registry and run the full stack with Docker Compose.
+
+Create a `docker-compose.yml`:
+
+```yaml
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: rsdice
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: rsdice
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rsdice"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ghcr.io/lhelge/rsdice-backend:latest
+    environment:
+      PORT: "3000"
+      JWT_SECRET: change-me-to-a-secure-secret
+      DATABASE_URL: postgres://rsdice:change-me@postgres:5432/rsdice
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/lhelge/rsdice-frontend:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+```
+
+Then start the stack:
+
+```sh
+docker compose up -d
+```
+
+The game will be available at `http://localhost:8080`.
