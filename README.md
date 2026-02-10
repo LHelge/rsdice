@@ -2,7 +2,7 @@
 
 A turn-based online multiplayer dice game.
 
-Players compete on a map of hexagonal tiles grouped into areas. Each area holds 1–8 dice. On your turn you attack adjacent enemy areas — the attacker and defender each roll the dice on their area. If the attacker's total is strictly greater, they capture the area; otherwise the attacker loses all dice except one. At the end of your turn you receive bonus dice equal to your largest group of connected areas. Excess dice (up to 60) are stored for future turns. The last player standing wins.
+Players compete on a map of hexagonal tiles grouped into areas. Each game supports up to **6 players**. Each area holds 1–8 dice. On your turn you attack adjacent enemy areas — the attacker and defender each roll the dice on their area. If the attacker's total is strictly greater, they capture the area; otherwise the attacker loses all dice except one. At the end of your turn you receive bonus dice equal to your largest group of connected areas. Excess dice (up to 60) are stored for future turns. The last player standing wins.
 
 ## Architecture
 
