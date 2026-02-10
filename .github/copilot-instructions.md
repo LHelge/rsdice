@@ -19,9 +19,9 @@ rsdice is a turn-based online multiplayer dice game. Players compete on a map bu
 | Layer | Technology | Notes |
 |---|---|---|
 | **Backend** | Rust 2024, Axum 0.8, SQLx (PostgreSQL), JWT + Argon2 auth | REST API + WebSocket server |
-| **Game client** | Rust 2024, Bevy 0.18 | Compiled to WebAssembly via `wasm-bindgen` |
+| **Game client** | Rust 2024, Bevy 0.18 | Compiled to WebAssembly via `wasm-pack` |
 | **Common** | Rust 2024 crate | Shared domain types used by backend and game |
-| **Frontend** | Node, Vite, TypeScript, React | Hosts the WASM game client |
+| **Frontend** | Node, Vite, TypeScript, React, Tailwind CSS | Hosts the WASM game client |
 | **Communication** | WebSockets | Between game client (Bevy/WASM) and backend (Axum) |
 | **Database** | PostgreSQL 18 | Managed via Docker Compose, SQLx migrations |
 
@@ -107,12 +107,13 @@ cargo add <crate> -p <package> -F feat # with features
 
 ### WASM Build & Release
 
-On release builds, compile the game crate to WebAssembly and copy the output to the frontend's public directory:
+The WASM build artifacts are **not committed to source control** — they are generated cleanly each time. Use the helper script to build the game crate to WebAssembly:
 
 ```sh
-cargo build -p game --release --target wasm32-unknown-unknown
-wasm-bindgen --out-dir frontend/public/wasm --target web target/wasm32-unknown-unknown/release/game.wasm
+./scripts/build-wasm.sh
 ```
+
+This runs `wasm-pack build` against the `game` crate in release mode and outputs the artifacts to `frontend/src/wasm/`.
 
 ---
 

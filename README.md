@@ -25,8 +25,7 @@ rsdice/                 # Cargo workspace (resolver = "3")
 ## Prerequisites
 
 - **Rust** (edition 2024) — install via [rustup](https://rustup.rs/)
-- **wasm32-unknown-unknown target** — `rustup target add wasm32-unknown-unknown`
-- **wasm-bindgen-cli** — `cargo install wasm-bindgen-cli`
+- **wasm-pack** — `cargo install wasm-pack`
 - **Docker & Docker Compose** — for the PostgreSQL database
 - **Node.js** (LTS) — for the frontend
 - **SQLx CLI** — `cargo install sqlx-cli --features postgres`
@@ -66,8 +65,7 @@ cargo run -p backend
 ### 5. Build the game client (WASM)
 
 ```sh
-cargo build -p game --release --target wasm32-unknown-unknown
-wasm-bindgen --out-dir frontend/public/wasm --target web target/wasm32-unknown-unknown/release/game.wasm
+./scripts/build-wasm.sh
 ```
 
 ### 6. Run the frontend
