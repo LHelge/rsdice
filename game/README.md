@@ -5,15 +5,14 @@ The interactive game client for rsdice, built with Bevy and compiled to WebAssem
 ## Tech Stack
 
 - **Rust 2024** with **Bevy 0.18** (ECS game engine)
-- **WebAssembly** via `wasm-bindgen`
+- **WebAssembly** via `wasm-pack`
 - **common** crate for shared domain types
 - Communicates with the backend over **WebSockets**
 
 ## Prerequisites
 
 - **Rust** (edition 2024) — install via [rustup](https://rustup.rs/)
-- **wasm32-unknown-unknown target** — `rustup target add wasm32-unknown-unknown`
-- **wasm-bindgen-cli** — `cargo install wasm-bindgen-cli`
+- **wasm-pack** — `cargo install wasm-pack`
 
 ## Development
 
@@ -29,21 +28,24 @@ The game crate uses `opt-level = 1` in dev mode for faster compile times, while 
 
 ## Building for WASM
 
-Compile to WebAssembly and prepare for the frontend:
+Use the helper script from the workspace root to build and output to the frontend:
 
 ```sh
-cargo build -p game --release --target wasm32-unknown-unknown
-wasm-bindgen --out-dir frontend/public/wasm --target web target/wasm32-unknown-unknown/release/game.wasm
+./scripts/build-wasm.sh
 ```
 
-The generated files in `frontend/public/wasm/` are then served by the Vite frontend.
+This runs `wasm-pack build` in release mode and outputs the artifacts to `frontend/src/wasm/`. These files are **not committed to source control** — they are built cleanly each time.
+
+The generated files are imported by the Vite frontend as ES modules.
 
 ## Project Structure
 
 ```
 game/
-└── src/
-    └── main.rs    # Bevy app entry point — systems, components, resources
+├── src/
+│   ├── lib.rs     # Shared app builder + WASM entry point
+│   └── main.rs    # Native binary entry point (dev builds)
+└── Cargo.toml     # [lib] crate-type = ["cdylib", "rlib"]
 ```
 
 ## Testing
