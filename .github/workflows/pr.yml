@@ -7,11 +7,17 @@ on:
 env:
   CARGO_TERM_COLOR: always
   SQLX_OFFLINE: "true"
+  BUILDER: ghcr.io/lhelge/rsdice/builder:latest
 
 jobs:
   rust-fmt:
     name: Rust Formatting
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/lhelge/rsdice/builder:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - run: cargo fmt --all -- --check
@@ -19,6 +25,11 @@ jobs:
   rust-clippy:
     name: Rust Clippy
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/lhelge/rsdice/builder:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
@@ -27,6 +38,11 @@ jobs:
   rust-test:
     name: Rust Tests
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/lhelge/rsdice/builder:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
@@ -35,16 +51,16 @@ jobs:
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/lhelge/rsdice/builder:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npx tsc -b --noEmit
