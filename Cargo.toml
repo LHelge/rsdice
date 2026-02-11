@@ -2,6 +2,11 @@
 resolver = "3"
 members = ["backend", "common", "game"]
 
+[workspace.package]
+description = "A turn-based online multiplayer dice game"
+repository = "https://github.com/LHelge/rsdice"
+license = "MIT"
+
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
 opt-level = 1
