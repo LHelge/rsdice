@@ -19,7 +19,6 @@ bevy = { version = "0.18.0", default-features = false, features = [
     # UI, scenes, audio, picking (from the default 3d profile)
     "ui_bevy_render",
     "scene",
-    "audio",
     "picking",
     # WASM
     "webgl2",
