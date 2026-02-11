@@ -363,7 +363,7 @@ dependencies = [
 
 [[package]]
 name = "backend"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "argon2",
  "axum",
@@ -1843,7 +1843,7 @@ dependencies = [
 
 [[package]]
 name = "common"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "rand 0.10.0",
  "serde",
@@ -2600,7 +2600,7 @@ dependencies = [
 
 [[package]]
 name = "game"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "bevy",
  "common",
