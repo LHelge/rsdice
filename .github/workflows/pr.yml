@@ -46,6 +46,13 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0 libwayland-dev
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+      - name: Build WASM
+        run: ../scripts/build-wasm.sh
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -57,3 +64,5 @@ jobs:
         run: npm run lint
       - name: Type check
         run: npx tsc --noEmit
+      - name: Build
+        run: npm run build
