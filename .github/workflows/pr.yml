@@ -52,7 +52,7 @@ jobs:
       - name: Install wasm-pack
         run: cargo install wasm-pack
       - name: Build WASM
-        run: ../scripts/build-wasm.sh
+        run: ../scripts/build-wasm.sh --no-opt
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
