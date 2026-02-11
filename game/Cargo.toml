@@ -7,7 +7,23 @@ edition = "2024"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bevy = "0.18.0"
+bevy = { version = "0.18.0", default-features = false, features = [
+    # Core
+    "default_app",
+    "std",
+    "bevy_winit",
+    "multi_threaded",
+    "default_font",
+    # 3D rendering
+    "3d_bevy_render",
+    # UI, scenes, audio, picking (from the default 3d profile)
+    "ui_bevy_render",
+    "scene",
+    "audio",
+    "picking",
+    # WASM
+    "webgl2",
+] }
 common = { path = "../common" }
 getrandom = { version = "0.4", features = ["wasm_js"] }
 wasm-bindgen = "0.2.108"
