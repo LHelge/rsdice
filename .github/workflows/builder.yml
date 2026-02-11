@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: ghcr.io/${{ github.repository }}/builder
+  IMAGE: ghcr.io/lhelge/rsdice/builder
 
 permissions:
   contents: read
