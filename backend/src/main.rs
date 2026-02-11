@@ -5,10 +5,12 @@ mod routes;
 
 use std::net::Ipv4Addr;
 
+use axum::Router;
 use prelude::*;
 use sqlx::PgPool;
 use thiserror::Error;
 use tokio::net::TcpListener;
+use tower_http::trace::TraceLayer;
 use tracing::{debug, error, info};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -56,7 +58,10 @@ async fn app() -> std::result::Result<(), AppError> {
 
     let state = AppState::new(config.clone(), db);
 
-    let app = routes::routes().with_state(state);
+    let app = Router::new()
+        .nest("/api", routes::routes())
+        .layer(TraceLayer::new_for_http())
+        .with_state(state);
 
     let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, config.port)).await?;
 

@@ -1,4 +1,5 @@
 import { Link, Outlet } from "react-router-dom";
+import HealthIndicator from "./HealthIndicator";
 
 export default function Layout() {
   return (
@@ -8,13 +9,14 @@ export default function Layout() {
           <Link to="/" className="text-xl font-bold text-white hover:text-indigo-400 transition-colors">
             🎲 rsdice
           </Link>
-          <div className="flex gap-6">
+          <div className="flex items-center gap-6">
             <Link to="/" className="text-gray-300 hover:text-white transition-colors">
               Home
             </Link>
             <Link to="/game" className="text-gray-300 hover:text-white transition-colors">
               Play
             </Link>
+            <HealthIndicator />
           </div>
         </nav>
       </header>

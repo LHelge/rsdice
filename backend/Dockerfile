@@ -3,44 +3,28 @@ FROM rust:1.93-bookworm AS builder
 
 WORKDIR /src
 
-# Copy workspace manifests first for dependency caching
+# Copy workspace manifests and source code
 COPY Cargo.toml Cargo.toml
-COPY backend/Cargo.toml backend/Cargo.toml
-COPY common/Cargo.toml common/Cargo.toml
-COPY game/Cargo.toml game/Cargo.toml
+COPY backend/ backend/
+COPY common/ common/
 
-# Create dummy source files so cargo can fetch and compile dependencies.
-# This is a Docker layer caching optimization: Cargo.toml files change rarely
-# compared to source code, so the expensive dependency compilation layer stays
-# cached across most builds. Only the final rebuild of the actual crate code
-# runs when source files change.
-RUN mkdir -p backend/src common/src game/src && \
-    echo "fn main() {}" > backend/src/main.rs && \
-    echo "" > common/src/lib.rs && \
+# Create dummy game crate to satisfy workspace
+COPY game/Cargo.toml game/Cargo.toml
+RUN mkdir -p game/src && \
     echo "" > game/src/lib.rs && \
     echo "fn main() {}" > game/src/main.rs
 
 ENV SQLX_OFFLINE=true
 RUN cargo build --release -p backend
 
-
-# Remove dummy source files to avoid confusion in the final build
-# but keep the dummy game to prevent the workspace from thinking 
-# the game crate is missing (since it has a different target)
-RUN rm -rf backend/src common/src
-
-# Copy real source code and rebuild
-COPY common/ common/
-COPY backend/ backend/
-
-RUN cargo build --release -p backend
-
 # ---- Runtime stage ----
-FROM gcr.io/distroless/cc-debian12
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /src/target/release/backend /backend
 COPY --from=builder /src/backend/migrations /migrations
 
 EXPOSE 3000
 
-ENTRYPOINT ["/backend"]
+CMD ["/backend"]

@@ -5,32 +5,18 @@ RUN cargo install wasm-pack
 
 WORKDIR /src
 
-# Copy workspace manifests for dependency caching
+# Copy workspace manifests and source code
 COPY Cargo.toml Cargo.toml
-COPY backend/Cargo.toml backend/Cargo.toml
-COPY common/Cargo.toml common/Cargo.toml
-COPY game/Cargo.toml game/Cargo.toml
-
-# Create dummy source files
-RUN mkdir -p backend/src common/src game/src && \
-    echo "fn main() {}" > backend/src/main.rs && \
-    echo "" > common/src/lib.rs && \
-    echo "" > game/src/lib.rs && \
-    echo "fn main() {}" > game/src/main.rs
-
-ENV SQLX_OFFLINE=true
-RUN cargo build --release -p game 2>/dev/null || true
-
-# Remove dummy source files to avoid confusion in the final build
-# but keep the dummy backend to prevent the workspace from thinking 
-# the backend crate is missing (since it has a different target)
-RUN rm -rf common/src game/src
-
-# Copy real source code and build script
 COPY common/ common/
 COPY game/ game/
 COPY scripts/build-wasm.sh scripts/build-wasm.sh
 
+# Create dummy backend crate to satisfy workspace
+COPY backend/Cargo.toml backend/Cargo.toml
+RUN mkdir -p backend/src && \
+    echo "fn main() {}" > backend/src/main.rs
+
+ENV SQLX_OFFLINE=true
 RUN scripts/build-wasm.sh /wasm-out
 
 # ---- Frontend build stage ----
