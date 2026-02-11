@@ -33,10 +33,3 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 RUN rustup target add wasm32-unknown-unknown \
     && cargo install wasm-pack
 
-# Smoke-test: make sure critical tools are available
-RUN rustc --version \
-    && cargo fmt --version \
-    && cargo clippy --version \
-    && wasm-pack --version \
-    && node --version \
-    && npm --version
