@@ -15,8 +15,8 @@ wasm-pack build "$ROOT_DIR/game" \
     --out-dir "$OUT_DIR" \
     --release
 
-# wasm-pack generates a package.json, README.md, and .gitignore in the output
+# wasm-pack generates a package.json and README.md in the output
 # directory; remove them since the output lives inside the frontend source tree.
-rm -f "$OUT_DIR/package.json" "$OUT_DIR/.gitignore" "$OUT_DIR/README.md"
+rm -f "$OUT_DIR/package.json" "$OUT_DIR/README.md"
 
 echo "✅ WASM build complete → $OUT_DIR"
