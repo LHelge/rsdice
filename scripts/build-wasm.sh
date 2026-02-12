@@ -22,7 +22,7 @@ wasm-pack build "$ROOT_DIR/game" \
     --target web \
     --out-dir "$OUT_DIR" \
     --release \
-    "${EXTRA_ARGS[@]}"
+    ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}
 
 # wasm-pack generates a package.json and README.md in the output
 # directory; remove them since the output lives inside the frontend source tree.
