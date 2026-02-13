@@ -71,17 +71,9 @@ impl Stack {
     }
 
     // Simulate defence roll with all dice in the stack.
-    pub fn defence_roll(&self) -> usize {
+    pub fn roll(&self) -> usize {
         // Simulate rolling `count` dice and summing the results.
         (0..self.count).map(|_| rand::random_range(1..=6)).sum()
-    }
-
-    // Simulate attack roll with all but one die in the stack.
-    pub fn attack_roll(&self) -> usize {
-        // Simulate rolling `count - 1` dice and summing the results.
-        (0..(self.count - 1))
-            .map(|_| rand::random_range(1..=6))
-            .sum()
     }
 }
 

@@ -9,7 +9,7 @@ rsdice is a turn-based online multiplayer dice game. Players compete on a map bu
 1. **Setup** — A map is generated from hexagonal tiles grouped into areas. A game supports a maximum of **6 players**. Each player is randomly assigned a set of areas, and each owned area receives a random number of dice (1–8).
 2. **Turns** — Players take turns in order. On a turn a player may attack any adjacent enemy area from one of their own areas.
 3. **Combat** — The attacker rolls the number of dice on their attacking area; the defender rolls the dice on the defending area. If the attacker's total is **strictly greater**, the attacker captures the area and moves all dice except one from the attacking area to the captured area. On a **draw or defender higher**, the attacker loses all dice on the attacking area except one.
-4. **End of turn** — When the player ends their turn (or has no valid attacks), they receive bonus dice equal to the size of their **largest group of connected areas**. These bonus dice are distributed randomly across all of their areas (each area is capped at 8 dice). Excess dice that cannot be placed are **stored** (up to a maximum of 60) and carried over for random allocation on subsequent turns.
+4. **End of turn** — When the player ends their turn (or has no valid attacks), they receive bonus dice equal to the size of their **largest group of connected areas**. These bonus dice are distributed randomly across all of their areas (each area is capped at 8 dice). Excess dice that cannot be placed are **stored** (up to a maximum of 20) and carried over for random allocation on subsequent turns.
 5. **Elimination** — A player is eliminated when they lose all their areas. The last player standing wins.
 
 ---
