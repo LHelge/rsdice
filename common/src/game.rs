@@ -51,6 +51,9 @@ pub enum GameError {
     #[error("not enough players to start the game")]
     NotEnoughPlayers,
 
+    #[error("Invalid turn")]
+    InvalidTurn,
+
     #[error("color conversion error: {0}")]
     ColorError(#[from] ColorError),
 
@@ -139,8 +142,8 @@ impl Game {
             .get_mut(&to_id)
             .ok_or(AttackError::AreaNotFound(to_id))?;
 
-        let attack_roll = from_area.stack.attack_roll();
-        let defense_roll = to_area.stack.defence_roll();
+        let attack_roll = from_area.stack.roll();
+        let defense_roll = to_area.stack.roll();
 
         if attack_roll > defense_roll {
             // Attacker wins: transfer ownership and move dice
@@ -156,25 +159,47 @@ impl Game {
         // Re-insert the attacking area
         self.world.areas.insert(from_id, from_area);
 
+        // Check if game is over
+        if self.world.is_winner(player_id) {
+            self.state = GameState::Finished;
+            // TODO: Send winner event
+        }
+
         Ok(())
     }
 
-    pub fn next_turn(&mut self, player_id: Uuid) -> Result<()> {
-        if self.state == GameState::Finished {
-            return Err(GameError::GameFinished);
-        }
-        if self.state == GameState::WaitingForPlayers {
-            return Err(GameError::GameNotStarted);
-        }
-        if let GameState::InProgress { turn } = &mut self.state {
-            let current_player_id = self.players[*turn].id;
-            if current_player_id != player_id {
-                return Err(GameError::NotPlayerTurn);
+    fn distribute_bonus_dice(&mut self, turn: usize) -> Result<()> {
+        let player = self.players.get_mut(turn).ok_or(GameError::InvalidTurn)?;
+        let mut bonus_dice =
+            self.world.largest_connected_group(player.id) + player.take_stored_dice();
+
+        while bonus_dice > 0 {
+            if !self.world.add_bonus_dice(player.id) {
+                player.store_dice(bonus_dice);
+                break;
             }
-            *turn = (*turn + 1) % self.players.len();
+            bonus_dice -= 1;
         }
 
         Ok(())
+    }
+
+    fn next_turn(&mut self) {
+        if let GameState::InProgress { turn } = &mut self.state {
+            *turn = (*turn + 1) % self.players.len();
+        }
+    }
+
+    pub fn end_turn(&mut self) -> Result<()> {
+        match self.state {
+            GameState::InProgress { turn } => {
+                self.distribute_bonus_dice(turn)?;
+                self.next_turn();
+                Ok(())
+            }
+            GameState::WaitingForPlayers => Err(GameError::GameNotStarted),
+            GameState::Finished => Err(GameError::GameFinished),
+        }
     }
 }
 
@@ -398,23 +423,21 @@ mod tests {
     }
 
     // ================================================================
-    // ==== Game::next_turn ====
+    // ==== Game::end_turn ====
     // ================================================================
 
     #[test]
-    fn next_turn_advances_turn_index() {
+    fn end_turn_advances_turn_index() {
         let mut game = new_game();
-        let ids = add_players(&mut game, 3);
+        add_players(&mut game, 3);
         game.start().unwrap();
 
-        // Find whose turn it is
         let GameState::InProgress { turn } = game.state else {
             panic!("expected InProgress");
         };
-        let current_player_id = ids[turn];
         let expected_next = (turn + 1) % 3;
 
-        game.next_turn(current_player_id).unwrap();
+        game.end_turn().unwrap();
 
         let GameState::InProgress { turn: new_turn } = game.state else {
             panic!("expected InProgress");
@@ -423,57 +446,45 @@ mod tests {
     }
 
     #[test]
-    fn next_turn_wraps_around() {
+    fn end_turn_wraps_around() {
         let mut game = new_game();
-        let ids = add_players(&mut game, 2);
-        // Force the state to have a deterministic turn
+        add_players(&mut game, 2);
         game.state = GameState::InProgress { turn: 1 };
 
-        game.next_turn(ids[1]).unwrap();
+        game.end_turn().unwrap();
         assert_eq!(game.state, GameState::InProgress { turn: 0 });
 
-        game.next_turn(ids[0]).unwrap();
+        game.end_turn().unwrap();
         assert_eq!(game.state, GameState::InProgress { turn: 1 });
     }
 
     #[test]
-    fn next_turn_wrong_player_returns_error() {
+    fn end_turn_when_waiting_returns_error() {
         let mut game = new_game();
-        let ids = add_players(&mut game, 2);
-        game.state = GameState::InProgress { turn: 0 };
-
-        // Player 1 tries to end turn when it's player 0's turn
-        let err = game.next_turn(ids[1]).unwrap_err();
-        assert!(matches!(err, GameError::NotPlayerTurn));
-    }
-
-    #[test]
-    fn next_turn_when_waiting_returns_error() {
-        let mut game = new_game();
-        let ids = add_players(&mut game, 2);
-        let err = game.next_turn(ids[0]).unwrap_err();
+        add_players(&mut game, 2);
+        let err = game.end_turn().unwrap_err();
         assert!(matches!(err, GameError::GameNotStarted));
     }
 
     #[test]
-    fn next_turn_when_finished_returns_error() {
+    fn end_turn_when_finished_returns_error() {
         let mut game = new_game();
-        let ids = add_players(&mut game, 2);
+        add_players(&mut game, 2);
         game.state = GameState::Finished;
-        let err = game.next_turn(ids[0]).unwrap_err();
+        let err = game.end_turn().unwrap_err();
         assert!(matches!(err, GameError::GameFinished));
     }
 
     #[test]
-    fn next_turn_full_cycle() {
+    fn end_turn_full_cycle() {
         let mut game = new_game();
-        let ids = add_players(&mut game, 4);
+        add_players(&mut game, 4);
         game.state = GameState::InProgress { turn: 0 };
 
-        for id in ids {
-            game.next_turn(id).unwrap();
+        for _ in 0..4 {
+            game.end_turn().unwrap();
         }
-        // After 4 next_turn calls with 4 players, we should be back to turn 0
+        // After 4 end_turn calls with 4 players, we should be back to turn 0
         assert_eq!(game.state, GameState::InProgress { turn: 0 });
     }
 

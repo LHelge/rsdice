@@ -1,4 +1,5 @@
 use crate::{AttackError, Stack};
+use rand::seq::IndexedRandom;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
@@ -82,6 +83,10 @@ impl Area {
         self.owner == Some(player_id)
     }
 
+    pub fn is_not_owned(&self) -> bool {
+        self.owner.is_none()
+    }
+
     pub fn is_adjacent(&self, other: &Area) -> bool {
         self.tiles.iter().any(|tile| {
             other
@@ -130,6 +135,73 @@ impl World {
         }
 
         Ok(())
+    }
+
+    pub fn largest_connected_group(&self, player_id: Uuid) -> usize {
+        let mut visited = HashSet::new();
+        let mut largest = 0;
+
+        for area in self.areas.values() {
+            if area.is_owned_by(player_id) && !visited.contains(&area.id) {
+                let size = self.dfs(area.id, player_id, &mut visited);
+                largest = largest.max(size);
+            }
+        }
+
+        largest
+    }
+
+    /// Depth-first traversal counting how many of `player_id`'s areas are
+    /// reachable from the area with `start_id` via adjacency.
+    fn dfs(&self, start_id: Uuid, player_id: Uuid, visited: &mut HashSet<Uuid>) -> usize {
+        visited.insert(start_id);
+        let mut size = 1;
+
+        let start_area = match self.areas.get(&start_id) {
+            Some(a) => a,
+            None => return size,
+        };
+
+        for other in self.areas.values() {
+            if !visited.contains(&other.id)
+                && other.is_owned_by(player_id)
+                && start_area.is_adjacent(other)
+            {
+                size += self.dfs(other.id, player_id, visited);
+            }
+        }
+
+        size
+    }
+
+    /// Add a single die to a random non-full area owned by `player_id`.
+    /// Returns `true` if a die was placed, `false` if the player has no areas
+    /// or all of their areas are already at maximum dice.
+    pub fn add_bonus_dice(&mut self, player_id: Uuid) -> bool {
+        let eligible_ids: Vec<Uuid> = self
+            .areas
+            .values()
+            .filter(|a| a.is_owned_by(player_id) && !a.stack.is_full())
+            .map(|a| a.id)
+            .collect();
+
+        let Some(&chosen_id) = eligible_ids.choose(&mut rand::rng()) else {
+            return false;
+        };
+
+        if let Some(area) = self.areas.get_mut(&chosen_id) {
+            // increment is safe because we filtered out full stacks
+            let _ = area.stack.increment();
+        }
+
+        true
+    }
+
+    pub fn is_winner(&self, player_id: Uuid) -> bool {
+        self.areas
+            .values()
+            .filter(|area| !area.is_owned_by(player_id))
+            .all(|area| area.is_not_owned())
     }
 }
 
@@ -598,5 +670,317 @@ mod tests {
     fn default_world_has_no_areas() {
         let world = World::default();
         assert!(world.areas.is_empty());
+    }
+
+    // ================================================================
+    // ==== World::largest_connected_group ====
+    // ================================================================
+
+    // ==== No areas ====
+
+    #[test]
+    fn largest_connected_group_empty_world() {
+        let world = World::default();
+        assert_eq!(world.largest_connected_group(Uuid::new_v4()), 0);
+    }
+
+    // ==== Player owns nothing ====
+
+    #[test]
+    fn largest_connected_group_player_owns_nothing() {
+        let other = Uuid::new_v4();
+        let player = Uuid::new_v4();
+
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(other);
+
+        let world = world_from_areas(vec![a]);
+        assert_eq!(world.largest_connected_group(player), 0);
+    }
+
+    // ==== Single area ====
+
+    #[test]
+    fn largest_connected_group_single_area() {
+        let player = Uuid::new_v4();
+
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+
+        let world = world_from_areas(vec![a]);
+        assert_eq!(world.largest_connected_group(player), 1);
+    }
+
+    // ==== Two adjacent areas same player ====
+
+    #[test]
+    fn largest_connected_group_two_adjacent() {
+        let player = Uuid::new_v4();
+
+        // (0,0) and (0,1) are adjacent in the same column
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+        let mut b = area_with_tile(0, 1);
+        b.owner = Some(player);
+
+        let world = world_from_areas(vec![a, b]);
+        assert_eq!(world.largest_connected_group(player), 2);
+    }
+
+    // ==== Two non-adjacent areas same player ====
+
+    #[test]
+    fn largest_connected_group_two_disconnected() {
+        let player = Uuid::new_v4();
+
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+        let mut b = area_with_tile(10, 10);
+        b.owner = Some(player);
+
+        let world = world_from_areas(vec![a, b]);
+        assert_eq!(world.largest_connected_group(player), 1);
+    }
+
+    // ==== Chain of three ====
+
+    #[test]
+    fn largest_connected_group_chain_of_three() {
+        let player = Uuid::new_v4();
+
+        // Column 0: tiles (0,0), (0,1), (0,2) form a vertical chain
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+        let mut b = area_with_tile(0, 1);
+        b.owner = Some(player);
+        let mut c = area_with_tile(0, 2);
+        c.owner = Some(player);
+
+        let world = world_from_areas(vec![a, b, c]);
+        assert_eq!(world.largest_connected_group(player), 3);
+    }
+
+    // ==== Chain broken by enemy ====
+
+    #[test]
+    fn largest_connected_group_chain_broken_by_enemy() {
+        let player = Uuid::new_v4();
+        let enemy = Uuid::new_v4();
+
+        // (0,0) player — (0,1) enemy — (0,2) player
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+        let mut b = area_with_tile(0, 1);
+        b.owner = Some(enemy);
+        let mut c = area_with_tile(0, 2);
+        c.owner = Some(player);
+
+        let world = world_from_areas(vec![a, b, c]);
+        // Two isolated groups of size 1
+        assert_eq!(world.largest_connected_group(player), 1);
+    }
+
+    // ==== Two groups, returns the larger ====
+
+    #[test]
+    fn largest_connected_group_picks_larger_group() {
+        let player = Uuid::new_v4();
+        let enemy = Uuid::new_v4();
+
+        // Group A: 3 connected areas in column 0
+        let mut a0 = area_with_tile(0, 0);
+        a0.owner = Some(player);
+        let mut a1 = area_with_tile(0, 1);
+        a1.owner = Some(player);
+        let mut a2 = area_with_tile(0, 2);
+        a2.owner = Some(player);
+
+        // Separator: enemy area blocks connection
+        let mut sep = area_with_tile(0, 3);
+        sep.owner = Some(enemy);
+
+        // Group B: 1 area far away
+        let mut b0 = area_with_tile(10, 10);
+        b0.owner = Some(player);
+
+        let world = world_from_areas(vec![a0, a1, a2, sep, b0]);
+        assert_eq!(world.largest_connected_group(player), 3);
+    }
+
+    // ==== Unowned areas do not count ====
+
+    #[test]
+    fn largest_connected_group_ignores_unowned_areas() {
+        let player = Uuid::new_v4();
+
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+        // Adjacent but unowned — should not extend the group
+        let b = area_with_tile(0, 1);
+
+        let world = world_from_areas(vec![a, b]);
+        assert_eq!(world.largest_connected_group(player), 1);
+    }
+
+    // ==== Enemy areas do not bridge groups ====
+
+    #[test]
+    fn largest_connected_group_enemy_does_not_bridge() {
+        let player = Uuid::new_v4();
+        let enemy = Uuid::new_v4();
+
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+        let mut mid = area_with_tile(0, 1);
+        mid.owner = Some(enemy);
+        let mut b = area_with_tile(0, 2);
+        b.owner = Some(player);
+
+        let world = world_from_areas(vec![a, mid, b]);
+        assert_eq!(world.largest_connected_group(player), 1);
+        // Meanwhile the enemy has 1
+        assert_eq!(world.largest_connected_group(enemy), 1);
+    }
+
+    // ==== All areas connected ====
+
+    #[test]
+    fn largest_connected_group_all_connected() {
+        let player = Uuid::new_v4();
+
+        // Build a 4-area vertical strip
+        let mut areas = Vec::new();
+        for y in 0..4 {
+            let mut a = area_with_tile(0, y);
+            a.owner = Some(player);
+            areas.push(a);
+        }
+
+        let world = world_from_areas(areas);
+        assert_eq!(world.largest_connected_group(player), 4);
+    }
+
+    // ==== Adjacency through multi-tile areas ====
+
+    #[test]
+    fn largest_connected_group_multi_tile_areas() {
+        let player = Uuid::new_v4();
+
+        // Area A occupies (0,0)+(0,1), Area B occupies (0,2)+(0,3)
+        // They connect via (0,1)↔(0,2)
+        let mut a = area_with_tiles(&[(0, 0), (0, 1)]);
+        a.owner = Some(player);
+        let mut b = area_with_tiles(&[(0, 2), (0, 3)]);
+        b.owner = Some(player);
+
+        let world = world_from_areas(vec![a, b]);
+        assert_eq!(world.largest_connected_group(player), 2);
+    }
+
+    // ================================================================
+    // ==== World::add_bonus_dice ====
+    // ================================================================
+
+    #[test]
+    fn add_bonus_dice_empty_world_returns_false() {
+        let mut world = World::default();
+        assert!(!world.add_bonus_dice(Uuid::new_v4()));
+    }
+
+    #[test]
+    fn add_bonus_dice_no_owned_areas_returns_false() {
+        let mut world = world_from_areas(vec![area_with_tile(0, 0)]);
+        assert!(!world.add_bonus_dice(Uuid::new_v4()));
+    }
+
+    #[test]
+    fn add_bonus_dice_increments_a_stack() {
+        let player = Uuid::new_v4();
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+
+        let mut world = world_from_areas(vec![a]);
+        let total_before: usize = world.areas.values().map(|a| a.stack.count()).sum();
+
+        assert!(world.add_bonus_dice(player));
+
+        let total_after: usize = world.areas.values().map(|a| a.stack.count()).sum();
+        assert_eq!(total_after, total_before + 1);
+    }
+
+    #[test]
+    fn add_bonus_dice_all_full_returns_false() {
+        let player = Uuid::new_v4();
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+        // Fill the stack to max
+        while !a.stack.is_full() {
+            a.stack.increment().unwrap();
+        }
+
+        let mut world = world_from_areas(vec![a]);
+        assert!(!world.add_bonus_dice(player));
+    }
+
+    #[test]
+    fn add_bonus_dice_skips_full_areas() {
+        let player = Uuid::new_v4();
+
+        // One full area
+        let mut full = area_with_tile(0, 0);
+        full.owner = Some(player);
+        while !full.stack.is_full() {
+            full.stack.increment().unwrap();
+        }
+
+        // One non-full area
+        let mut open = area_with_tile(0, 1);
+        open.owner = Some(player);
+        let open_id = open.id;
+
+        let mut world = world_from_areas(vec![full, open]);
+        assert!(world.add_bonus_dice(player));
+
+        // The die must have landed on the non-full area
+        assert_eq!(world.areas.get(&open_id).unwrap().stack.count(), 2);
+    }
+
+    #[test]
+    fn add_bonus_dice_only_affects_owned_areas() {
+        let player = Uuid::new_v4();
+        let enemy = Uuid::new_v4();
+
+        let mut own = area_with_tile(0, 0);
+        own.owner = Some(player);
+        let own_id = own.id;
+
+        let mut foe = area_with_tile(0, 1);
+        foe.owner = Some(enemy);
+        let foe_id = foe.id;
+
+        let mut world = world_from_areas(vec![own, foe]);
+        assert!(world.add_bonus_dice(player));
+
+        assert_eq!(world.areas.get(&own_id).unwrap().stack.count(), 2);
+        assert_eq!(world.areas.get(&foe_id).unwrap().stack.count(), 1);
+    }
+
+    #[test]
+    fn add_bonus_dice_multiple_calls_fill_up() {
+        let player = Uuid::new_v4();
+        let mut a = area_with_tile(0, 0);
+        a.owner = Some(player);
+        let a_id = a.id;
+
+        let mut world = world_from_areas(vec![a]);
+
+        // Stack starts at 1, max is 8 → 7 successful adds
+        for _ in 0..7 {
+            assert!(world.add_bonus_dice(player));
+        }
+        assert_eq!(world.areas.get(&a_id).unwrap().stack.count(), Stack::MAX);
+
+        // Now full
+        assert!(!world.add_bonus_dice(player));
     }
 }
