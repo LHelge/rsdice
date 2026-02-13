@@ -23,7 +23,10 @@ impl Player {
     }
 
     pub fn store_dice(&mut self, amount: usize) {
-        self.stored_dice = (self.stored_dice + amount).clamp(0, Self::MAX_STORED_DICE);
+        self.stored_dice = self
+            .stored_dice
+            .saturating_add(amount)
+            .clamp(0, Self::MAX_STORED_DICE);
     }
 
     pub fn take_stored_dice(&mut self) -> usize {

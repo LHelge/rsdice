@@ -30,15 +30,16 @@ impl Tile {
     }
 
     pub fn is_adjacent(&self, other: &Tile) -> bool {
-        let dx = (self.x as isize - other.x as isize).abs();
-        let dy = (self.y as isize - other.y as isize).abs();
+        let dx = other.x as isize - self.x as isize;
+        let dy = other.y as isize - self.y as isize;
 
-        // For hexagonal tiles, two tiles are adjacent if they are next to each other in any of the 6 directions
-        (dx == 1 && dy == 0)
-            || (dx == 1 && dy == 1 && self.x.is_multiple_of(2))
-            || (dx == 1 && dy == -1 && !self.x.is_multiple_of(2))
-            || (dx == 0 && dy == 1)
-            || (dx == 0 && dy == -1)
+        let diagonal_dy = if self.x.is_multiple_of(2) { -1 } else { 1 };
+
+        // For hexagonal tiles, two tiles are adjacent if they are next to each other
+        // in any of the 6 directions relative to `self`.
+        (dx == -1 || dx == 1) && dy == 0
+            || dx == 0 && (dy == -1 || dy == 1)
+            || (dx == -1 || dx == 1) && dy == diagonal_dy
     }
 }
 
@@ -128,6 +129,24 @@ mod tests {
         let a = tile(1, 1);
         let b = tile(2, 1);
         assert_eq!(a.is_adjacent(&b), b.is_adjacent(&a));
+    }
+
+    #[test]
+    fn tile_even_column_has_upward_diagonals() {
+        let a = tile(2, 2);
+        assert!(a.is_adjacent(&tile(1, 1)));
+        assert!(a.is_adjacent(&tile(3, 1)));
+        assert!(!a.is_adjacent(&tile(1, 3)));
+        assert!(!a.is_adjacent(&tile(3, 3)));
+    }
+
+    #[test]
+    fn tile_odd_column_has_downward_diagonals() {
+        let a = tile(3, 2);
+        assert!(a.is_adjacent(&tile(2, 3)));
+        assert!(a.is_adjacent(&tile(4, 3)));
+        assert!(!a.is_adjacent(&tile(2, 1)));
+        assert!(!a.is_adjacent(&tile(4, 1)));
     }
 
     // ==== Tile equality & hashing ====

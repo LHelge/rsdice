@@ -127,6 +127,14 @@ impl Game {
     }
 
     pub fn attack(&mut self, from_id: Uuid, to_id: Uuid, player_id: Uuid) -> Result<()> {
+        if let GameState::InProgress { turn } = self.state {
+            if self.players[turn].id != player_id {
+                return Err(GameError::NotPlayerTurn);
+            }
+        } else {
+            return Err(GameError::GameNotStarted);
+        }
+
         // Validate attack
         self.world.validate_attack(from_id, to_id, player_id)?;
 
