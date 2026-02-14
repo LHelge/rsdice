@@ -1,5 +1,6 @@
 use crate::models::{User, UserError};
 use crate::prelude::*;
+use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -11,35 +12,118 @@ impl<'a> UserRepository<'a> {
     pub fn new(db: &'a PgPool) -> Self {
         Self { db }
     }
+
+    fn hash_verification_token(token: &str) -> String {
+        let digest = Sha256::digest(token.as_bytes());
+        format!("{digest:x}")
+    }
+
     /// Create a new user in the database.
-    pub async fn create(&self, username: &str, password: &str, admin: bool) -> Result<User> {
-        let user = User::new(username, password, admin)?;
+    pub async fn create(
+        &self,
+        username: &str,
+        email: &str,
+        password: &str,
+        admin: bool,
+    ) -> Result<User> {
+        let user = User::new(username, email, password, admin)?;
 
         sqlx::query!(
             r#"
-            INSERT INTO users (id, username, password_hash, admin)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO users (id, username, email, password_hash, email_verified, admin)
+            VALUES ($1, $2, $3, $4, $5, $6)
             "#,
             user.id,
             user.username,
+            user.email,
             user.password_hash,
+            user.email_verified,
             user.admin,
         )
         .execute(self.db)
         .await
         .map_err(|e| {
-            // Check for unique constraint violation (TODO: This is specific to Postgres, consider using a more database-agnostic approach if needed)
-            if let sqlx::Error::Database(ref db_err) = e
-                && db_err
-                    .message()
-                    .contains("duplicate key value violates unique constraint")
-            {
-                return Error::User(UserError::UsernameExists);
+            if let sqlx::Error::Database(ref db_err) = e {
+                if matches!(db_err.constraint(), Some("users_username_key")) {
+                    return Error::User(UserError::UsernameExists);
+                }
+
+                if matches!(db_err.constraint(), Some("users_email_key")) {
+                    return Error::User(UserError::EmailExists);
+                }
             }
+
             Error::Database(e)
         })?;
 
         Ok(user)
+    }
+
+    /// Creates a one-time email verification token and returns the raw token.
+    pub async fn create_email_verification_token(&self, user_id: Uuid) -> Result<String> {
+        let token = format!("{}.{}", Uuid::new_v4(), Uuid::new_v4());
+        let token_hash = Self::hash_verification_token(&token);
+
+        sqlx::query!(
+            r#"
+            DELETE FROM email_verification_tokens
+            WHERE user_id = $1
+              AND used_at IS NULL
+            "#,
+            user_id,
+        )
+        .execute(self.db)
+        .await?;
+
+        sqlx::query!(
+            r#"
+            INSERT INTO email_verification_tokens (id, user_id, token_hash, expires_at)
+            VALUES ($1, $2, $3, NOW() + INTERVAL '24 HOURS')
+            "#,
+            Uuid::new_v4(),
+            user_id,
+            token_hash,
+        )
+        .execute(self.db)
+        .await?;
+
+        Ok(token)
+    }
+
+    /// Verifies an email token and marks the corresponding user as verified.
+    pub async fn verify_email_token(&self, token: &str) -> Result<bool> {
+        let token_hash = Self::hash_verification_token(token);
+
+        let token_row = sqlx::query!(
+            r#"
+            UPDATE email_verification_tokens
+            SET used_at = NOW()
+            WHERE token_hash = $1
+              AND used_at IS NULL
+              AND expires_at > NOW()
+            RETURNING user_id
+            "#,
+            token_hash,
+        )
+        .fetch_optional(self.db)
+        .await?;
+
+        let Some(row) = token_row else {
+            return Ok(false);
+        };
+
+        sqlx::query!(
+            r#"
+            UPDATE users
+            SET email_verified = TRUE
+            WHERE id = $1
+            "#,
+            row.user_id,
+        )
+        .execute(self.db)
+        .await?;
+
+        Ok(true)
     }
 
     /// Find a user by their ID.
@@ -47,7 +131,7 @@ impl<'a> UserRepository<'a> {
         let user = sqlx::query_as!(
             User,
             r#"
-            SELECT id, username, password_hash, admin as "admin: bool"
+            SELECT id, username, email, password_hash, email_verified as "email_verified: bool", admin as "admin: bool"
             FROM users
             WHERE id = $1
             "#,
@@ -64,7 +148,7 @@ impl<'a> UserRepository<'a> {
         let user = sqlx::query_as!(
             User,
             r#"
-            SELECT id, username, password_hash, admin as "admin: bool"
+            SELECT id, username, email, password_hash, email_verified as "email_verified: bool", admin as "admin: bool"
             FROM users
             WHERE username = $1
             "#,
@@ -81,7 +165,7 @@ impl<'a> UserRepository<'a> {
         let users = sqlx::query_as!(
             User,
             r#"
-            SELECT id, username, password_hash, admin as "admin: bool"
+            SELECT id, username, email, password_hash, email_verified as "email_verified: bool", admin as "admin: bool"
             FROM users
             ORDER BY id
             "#,

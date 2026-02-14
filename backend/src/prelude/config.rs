@@ -15,6 +15,9 @@ pub struct Config {
     pub database_url: String,
     pub mailjet_api_key: String,
     pub mailjet_api_secret: String,
+    pub url: String,
+    pub mail_from_email: String,
+    pub mail_from_name: String,
 }
 
 impl Config {
@@ -36,12 +39,24 @@ impl Config {
         let mailjet_api_secret = std::env::var("MAILJET_API_SECRET")
             .map_err(|_| ConfigError::MissingEnvVar("MAILJET_API_SECRET".to_string()))?;
 
+        let frontend_url =
+            std::env::var("URL").map_err(|_| ConfigError::MissingEnvVar("URL".to_string()))?;
+
+        let mail_from_email = std::env::var("MAIL_FROM_EMAIL")
+            .map_err(|_| ConfigError::MissingEnvVar("MAIL_FROM_EMAIL".to_string()))?;
+
+        let mail_from_name = std::env::var("MAIL_FROM_NAME")
+            .map_err(|_| ConfigError::MissingEnvVar("MAIL_FROM_NAME".to_string()))?;
+
         Ok(Config {
             port,
             jwt_secret,
             database_url,
             mailjet_api_key,
             mailjet_api_secret,
+            url: frontend_url,
+            mail_from_email,
+            mail_from_name,
         })
     }
 }

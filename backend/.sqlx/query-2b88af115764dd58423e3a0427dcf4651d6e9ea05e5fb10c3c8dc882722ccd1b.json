@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, username, password_hash, admin as \"admin: bool\"\n            FROM users\n            ORDER BY id\n            ",
+  "query": "\n            SELECT id, username, email, password_hash, email_verified as \"email_verified: bool\", admin as \"admin: bool\"\n            FROM users\n            ORDER BY id\n            ",
   "describe": {
     "columns": [
       {
@@ -15,11 +15,21 @@
       },
       {
         "ordinal": 2,
-        "name": "password_hash",
+        "name": "email",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
+        "name": "password_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "email_verified: bool",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
         "name": "admin: bool",
         "type_info": "Bool"
       }
@@ -31,8 +41,10 @@
       false,
       false,
       false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "71cd2e3d1431093a64c8124c657b4e3ffdbcbf6f6c43e1335f21887c06dcaac7"
+  "hash": "2b88af115764dd58423e3a0427dcf4651d6e9ea05e5fb10c3c8dc882722ccd1b"
 }
