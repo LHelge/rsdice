@@ -13,6 +13,8 @@ pub struct Config {
     pub port: u16,
     pub jwt_secret: String,
     pub database_url: String,
+    pub mailjet_api_key: String,
+    pub mailjet_api_secret: String,
 }
 
 impl Config {
@@ -28,10 +30,18 @@ impl Config {
         let database_url = std::env::var("DATABASE_URL")
             .map_err(|_| ConfigError::MissingEnvVar("DATABASE_URL".to_string()))?;
 
+        let mailjet_api_key = std::env::var("MAILJET_API_KEY")
+            .map_err(|_| ConfigError::MissingEnvVar("MAILJET_API_KEY".to_string()))?;
+
+        let mailjet_api_secret = std::env::var("MAILJET_API_SECRET")
+            .map_err(|_| ConfigError::MissingEnvVar("MAILJET_API_SECRET".to_string()))?;
+
         Ok(Config {
             port,
             jwt_secret,
             database_url,
+            mailjet_api_key,
+            mailjet_api_secret,
         })
     }
 }
