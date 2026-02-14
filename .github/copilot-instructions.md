@@ -123,7 +123,7 @@ This runs `wasm-pack build` against the `game` crate in release mode and outputs
 - **Migrations**: SQLx migrations in `backend/migrations/`. Run with `sqlx migrate run`.
 - **Naming**: Snake-case table and column names. UUID primary keys.
 - **Local development**: The PostgreSQL container must be running when building locally or preparing SQLx statements. Start it with `docker compose up -d`.
-- **Offline mode**: After making changes to any database queries, run `cargo sqlx prepare -p backend` to regenerate the query metadata. This allows CI to build with `SQLX_OFFLINE=true` without a live database connection.
+- **Offline mode**: After making changes to any database queries, regenerate query metadata with either `cargo sqlx prepare -p backend` (from workspace root) or `cargo sqlx prepare` (from `backend/`). This allows CI to build with `SQLX_OFFLINE=true` without a live database connection.
 
 ---
 

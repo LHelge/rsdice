@@ -1,4 +1,4 @@
-use super::ClaimsError;
+use super::{ClaimsError, EmailError};
 use crate::models::UserError;
 use axum::{http::StatusCode, response::IntoResponse};
 use thiserror::Error;
@@ -14,8 +14,17 @@ pub enum Error {
     #[error("User error: {0}")]
     User(#[from] UserError),
 
+    #[error("Email transport error: {0}")]
+    EmailTransport(#[from] reqwest::Error),
+
+    #[error("Template rendering error: {0}")]
+    Template(#[from] askama::Error),
+
     #[error("Not found")]
     NotFound,
+
+    #[error("Email error: {0}")]
+    Email(#[from] EmailError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
