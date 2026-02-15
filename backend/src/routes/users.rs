@@ -34,6 +34,8 @@ pub fn routes() -> Router<AppState> {
         .route("/refresh", post(refresh))
         .route("/resend-verification", post(resend_verification))
         .route("/verify-email", post(verify_email))
+        .route("/request-password-reset", post(request_password_reset))
+        .route("/reset-password", post(reset_password))
         .route("/logout", post(logout))
 }
 
@@ -90,6 +92,25 @@ async fn send_verification_email(
             email: user.email.clone(),
         },
         mail_type: MailType::EmailVerification { token },
+    };
+
+    state.email.send(&mail).await?;
+    Ok(())
+}
+
+async fn send_password_reset_email(
+    state: &AppState,
+    repo: &UserRepository<'_>,
+    user: &User,
+) -> Result<()> {
+    let token = repo.create_password_reset_token(user.id).await?;
+
+    let mail = Mail {
+        recipient: Recipient {
+            name: user.username.clone(),
+            email: user.email.clone(),
+        },
+        mail_type: MailType::PasswordReset { token },
     };
 
     state.email.send(&mail).await?;
@@ -367,6 +388,63 @@ async fn verify_email(
 
     info!("Email verification succeeded");
 
+    Ok(())
+}
+
+#[derive(Deserialize)]
+struct RequestPasswordResetRequest {
+    identifier: String,
+}
+
+/// Sends a password reset email for a known user account.
+///
+/// Always returns success to avoid disclosing whether an account exists.
+async fn request_password_reset(
+    State(state): State<AppState>,
+    Json(payload): Json<RequestPasswordResetRequest>,
+) -> Result<()> {
+    debug!(
+        identifier_length = payload.identifier.trim().len(),
+        "Password reset requested"
+    );
+
+    let repo = UserRepository::new(&state.db);
+    if let Some(user) = repo
+        .find_by_username_or_email(payload.identifier.trim())
+        .await?
+    {
+        send_password_reset_email(&state, &repo, &user).await?;
+    }
+
+    Ok(())
+}
+
+#[derive(Deserialize)]
+struct ResetPasswordRequest {
+    token: String,
+    password: String,
+}
+
+/// Resets a user's password using a one-time reset token.
+async fn reset_password(
+    State(state): State<AppState>,
+    Json(payload): Json<ResetPasswordRequest>,
+) -> Result<()> {
+    debug!(
+        token_length = payload.token.trim().len(),
+        "Password reset confirmation requested"
+    );
+    let repo = UserRepository::new(&state.db);
+    let reset = repo
+        .consume_password_reset_token(payload.token.trim(), &payload.password)
+        .await?;
+
+    if !reset {
+        warn!("Password reset failed due to invalid or expired token");
+        return Err(Error::User(UserError::InvalidPasswordResetToken));
+    }
+
+    info!("Password reset succeeded");
     Ok(())
 }
 

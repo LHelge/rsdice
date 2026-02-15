@@ -24,6 +24,11 @@ impl<'a> UserRepository<'a> {
         format!("{digest:x}")
     }
 
+    fn hash_password_reset_token(token: &str) -> String {
+        let digest = Sha256::digest(token.as_bytes());
+        format!("{digest:x}")
+    }
+
     /// Create a new user in the database.
     pub async fn create(
         &self,
@@ -153,6 +158,108 @@ impl<'a> UserRepository<'a> {
         Ok(token)
     }
 
+    /// Revokes all active refresh tokens for a user.
+    pub async fn revoke_all_refresh_tokens(&self, user_id: Uuid) -> Result<()> {
+        sqlx::query!(
+            r#"
+            UPDATE refresh_tokens
+            SET revoked_at = NOW()
+            WHERE user_id = $1
+              AND revoked_at IS NULL
+            "#,
+            user_id,
+        )
+        .execute(self.db)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Creates a one-time password reset token and returns the raw token.
+    pub async fn create_password_reset_token(&self, user_id: Uuid) -> Result<String> {
+        let token = format!("{}.{}", Uuid::new_v4(), Uuid::new_v4());
+        let token_hash = Self::hash_password_reset_token(&token);
+
+        sqlx::query!(
+            r#"
+            DELETE FROM password_reset_tokens
+            WHERE user_id = $1
+              AND used_at IS NULL
+            "#,
+            user_id,
+        )
+        .execute(self.db)
+        .await?;
+
+        sqlx::query!(
+            r#"
+            INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at)
+            VALUES ($1, $2, $3, NOW() + INTERVAL '24 HOURS')
+            "#,
+            Uuid::new_v4(),
+            user_id,
+            token_hash,
+        )
+        .execute(self.db)
+        .await?;
+
+        Ok(token)
+    }
+
+    /// Consumes a password reset token and updates the user's password.
+    pub async fn consume_password_reset_token(&self, token: &str, password: &str) -> Result<bool> {
+        let token_hash = Self::hash_password_reset_token(token);
+        let mut transaction = self.db.begin().await?;
+
+        let token_row = sqlx::query!(
+            r#"
+            UPDATE password_reset_tokens
+            SET used_at = NOW()
+            WHERE token_hash = $1
+              AND used_at IS NULL
+              AND expires_at > NOW()
+            RETURNING user_id
+            "#,
+            token_hash,
+        )
+        .fetch_optional(&mut *transaction)
+        .await?;
+
+        let Some(row) = token_row else {
+            transaction.rollback().await?;
+            return Ok(false);
+        };
+
+        let password_hash = User::hash_password(password)?;
+
+        sqlx::query!(
+            r#"
+            UPDATE users
+            SET password_hash = $1
+            WHERE id = $2
+            "#,
+            password_hash,
+            row.user_id,
+        )
+        .execute(&mut *transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"
+            UPDATE refresh_tokens
+            SET revoked_at = NOW()
+            WHERE user_id = $1
+              AND revoked_at IS NULL
+            "#,
+            row.user_id,
+        )
+        .execute(&mut *transaction)
+        .await?;
+
+        transaction.commit().await?;
+        Ok(true)
+    }
+
     /// Returns the user id of a valid refresh token.
     pub async fn validate_refresh_token(&self, token: &str) -> Result<Option<Uuid>> {
         let token_hash = Self::hash_refresh_token(token);
@@ -219,6 +326,50 @@ impl<'a> UserRepository<'a> {
             WHERE username = $1
             "#,
             username,
+        )
+        .fetch_optional(self.db)
+        .await?;
+
+        Ok(user)
+    }
+
+    /// Find a user by their email address.
+    pub async fn find_by_email(&self, email: &str) -> Result<Option<User>> {
+        let normalized_email = email.trim().to_ascii_lowercase();
+
+        let user = sqlx::query_as!(
+            User,
+            r#"
+            SELECT id, username, email, password_hash, email_verified as "email_verified: bool", admin as "admin: bool"
+            FROM users
+            WHERE email = $1
+            "#,
+            normalized_email,
+        )
+        .fetch_optional(self.db)
+        .await?;
+
+        Ok(user)
+    }
+
+    /// Find a user by username or email.
+    pub async fn find_by_username_or_email(&self, identifier: &str) -> Result<Option<User>> {
+        let trimmed_identifier = identifier.trim();
+        if trimmed_identifier.is_empty() {
+            return Ok(None);
+        }
+
+        let normalized_email = trimmed_identifier.to_ascii_lowercase();
+
+        let user = sqlx::query_as!(
+            User,
+            r#"
+            SELECT id, username, email, password_hash, email_verified as "email_verified: bool", admin as "admin: bool"
+            FROM users
+            WHERE username = $1 OR email = $2
+            "#,
+            trimmed_identifier,
+            normalized_email,
         )
         .fetch_optional(self.db)
         .await?;
