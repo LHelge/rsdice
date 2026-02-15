@@ -1,12 +1,9 @@
 mod mail;
 mod mailjet;
-#[cfg(test)]
 mod mock;
 
 pub use mail::*;
 pub use mailjet::*;
-#[cfg(test)]
-#[allow(unused_imports)]
 pub use mock::*;
 
 use std::{future::Future, pin::Pin};

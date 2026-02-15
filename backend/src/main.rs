@@ -1,13 +1,8 @@
-mod email;
-mod models;
-mod prelude;
-mod repositories;
-mod routes;
-
 use std::net::Ipv4Addr;
 
 use axum::Router;
-use prelude::*;
+use backend::prelude::*;
+use backend::routes;
 use sqlx::PgPool;
 use thiserror::Error;
 use tokio::net::TcpListener;

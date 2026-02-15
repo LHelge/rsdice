@@ -18,4 +18,16 @@ impl AppState {
             db,
         }
     }
+
+    /// Create an `AppState` with a custom [`EmailClient`] implementation.
+    ///
+    /// Useful in tests where a [`MockEmailClient`](crate::email::MockEmailClient)
+    /// replaces the real mail provider.
+    pub fn with_email(config: Config, db: PgPool, email: Arc<dyn EmailClient>) -> Self {
+        Self {
+            config: Arc::new(config),
+            db,
+            email,
+        }
+    }
 }
