@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use axum::Router;
 use axum_test::{TestServer, TestServerConfig};
 use backend::{
