@@ -111,6 +111,16 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
                     >
                       {loadingLogin ? "Logging in..." : "Login"}
                     </button>
+
+                    <p className="text-sm text-gray-400 text-center">
+                      <Link
+                        to="/forgot-password"
+                        onClick={() => setMenuOpen(false)}
+                        className="text-indigo-400 hover:text-indigo-300"
+                      >
+                        Forgot your password?
+                      </Link>
+                    </p>
                   </form>
 
                   <p className="mt-3 text-sm text-gray-400">

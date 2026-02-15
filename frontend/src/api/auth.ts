@@ -140,3 +140,11 @@ export function changePassword(userId: string, currentPassword: string, password
 export function verifyEmail(token: string) {
     return request<void>("/api/users/verify-email", jsonRequest({ token }));
 }
+
+export function requestPasswordReset(identifier: string) {
+    return request<void>("/api/users/request-password-reset", jsonRequest({ identifier }));
+}
+
+export function resetPassword(token: string, password: string) {
+    return request<void>("/api/users/reset-password", jsonRequest({ token, password }));
+}

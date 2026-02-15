@@ -7,6 +7,8 @@ import Game from "./pages/Game";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -59,6 +61,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/game" element={<Game />} />
         <Route path="/register" element={<Register onRegistered={setCurrentUser} />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail onVerified={refreshCurrentUser} />} />
         <Route
           path="/profile"
