@@ -58,6 +58,17 @@ rsdice/                 # Cargo workspace (resolver = "3")
 - **Config** — Environment variables loaded via `dotenvy`, parsed manually in a `Config` struct.
 - **Tracing** — Use `tracing` and `tracing-subscriber` with env filter.
 
+### Email Module (`backend/src/email/`)
+
+The email system is built around a trait-based abstraction for testability and future provider support.
+
+- **`EmailClient` trait** — Defined in `email/mod.rs`. Single method `send(&self, mail: &Mail)`. Stored as `Arc<dyn EmailClient>` in `AppState`.
+- **`Mail` struct** — Defined in `email/mail.rs`. Combines a `Recipient { name, email }` with a `MailType` enum (`EmailVerification { token }`, `PasswordReset { token }`). Provides `subject()`, `to_html(base_url)`, and `to_text(base_url)` methods.
+- **`MailjetClient`** — Defined in `email/mailjet.rs`. Implements `EmailClient` for the Mailjet v3.1 Send API. Mailjet-specific wire types (request/response payloads) are private to this module.
+- **`MockEmailClient`** — Defined in `email/mock.rs` (gated behind `#[cfg(test)]`). Records sent `Mail` values for assertion in tests via `sent()` and `latest()` methods.
+- **Templates** — Askama HTML templates live in `backend/src/email/templates/` (configured via `backend/askama.toml`). Template structs are private to `email/mail.rs`.
+- **`EmailError`** — Defined in `email/mod.rs`. Variants: `Serialization`, `Http`, `Template`. Converted into the top-level `Error` enum via `#[from]`.
+
 ### Common Crate
 
 - All types derive `Serialize` and `Deserialize`.
@@ -123,7 +134,7 @@ This runs `wasm-pack build` against the `game` crate in release mode and outputs
 - **Migrations**: SQLx migrations in `backend/migrations/`. Run with `sqlx migrate run`.
 - **Naming**: Snake-case table and column names. UUID primary keys.
 - **Local development**: The PostgreSQL container must be running when building locally or preparing SQLx statements. Start it with `docker compose up -d`.
-- **Offline mode**: After making changes to any database queries, regenerate query metadata with either `cargo sqlx prepare -p backend` (from workspace root) or `cargo sqlx prepare` (from `backend/`). This allows CI to build with `SQLX_OFFLINE=true` without a live database connection.
+- **Offline mode**: After making changes to any database queries, regenerate query metadata with  `cargo sqlx prepare` (from `backend/`). This allows CI to build with `SQLX_OFFLINE=true` without a live database connection.
 
 ---
 
