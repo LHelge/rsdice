@@ -1,9 +1,9 @@
 use crate::{
+    email::{Mail, MailType, Recipient},
     models::{User, UserError},
     prelude::*,
     repositories::UserRepository,
 };
-use askama::Template;
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -31,55 +31,22 @@ pub fn routes() -> Router<AppState> {
         .route("/logout", post(logout))
 }
 
-#[derive(Template)]
-#[template(path = "verification_email.html")]
-struct VerificationEmailTemplate<'a> {
-    username: &'a str,
-    verification_url: &'a str,
-}
-
 async fn send_verification_email(
     state: &AppState,
     repo: &UserRepository<'_>,
     user: &User,
 ) -> Result<()> {
-    let verification_token = repo.create_email_verification_token(user.id).await?;
-    let verification_url = format!(
-        "{}/verify-email?token={}",
-        state.config.url.trim_end_matches('/'),
-        verification_token
-    );
+    let token = repo.create_email_verification_token(user.id).await?;
 
-    let html_part = VerificationEmailTemplate {
-        username: &user.username,
-        verification_url: &verification_url,
-    }
-    .render()?;
-
-    let text_part = format!(
-        "Hi {},\n\nPlease verify your rsdice account by clicking the link below:\n{}\n\nIf you did not create this account, you can ignore this email.",
-        user.username, verification_url,
-    );
-
-    let messages = Messages {
-        messages: vec![Message {
-            from: EmailAddress {
-                email: state.config.mail_from_email.clone(),
-                name: state.config.mail_from_name.clone(),
-            },
-            to: vec![EmailAddress {
-                email: user.email.clone(),
-                name: user.username.clone(),
-            }],
-            cc: vec![],
-            bcc: vec![],
-            subject: "Verify your rsdice account".to_string(),
-            text_part,
-            html_part,
-        }],
+    let mail = Mail {
+        recipient: Recipient {
+            name: user.username.clone(),
+            email: user.email.clone(),
+        },
+        mail_type: MailType::EmailVerification { token },
     };
 
-    state.email.send_email(&messages).await?;
+    state.email.send(&mail).await?;
     Ok(())
 }
 
