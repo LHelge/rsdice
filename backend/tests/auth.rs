@@ -226,6 +226,58 @@ async fn me_without_auth_returns_unauthorized() {
     response.assert_status_unauthorized();
 }
 
+// ==== Refresh ====
+
+#[tokio::test]
+async fn refresh_succeeds_after_login() {
+    let app = TestApp::spawn().await;
+
+    app.server
+        .post("/api/users/register")
+        .json(&json!({
+            "username": "alice",
+            "email": "alice@example.com",
+            "password": "Str0ng!Pass"
+        }))
+        .await;
+
+    let response = app.server.post("/api/users/refresh").await;
+    response.assert_status_ok();
+
+    let body: serde_json::Value = response.json();
+    assert_eq!(body["username"], "alice");
+    assert!(body.get("access_token").is_some());
+}
+
+#[tokio::test]
+async fn refresh_without_login_returns_unauthorized() {
+    let app = TestApp::spawn().await;
+
+    let response = app.server.post("/api/users/refresh").expect_failure().await;
+
+    response.assert_status_unauthorized();
+}
+
+#[tokio::test]
+async fn refresh_can_be_used_multiple_times_with_rotation() {
+    let app = TestApp::spawn().await;
+
+    app.server
+        .post("/api/users/register")
+        .json(&json!({
+            "username": "alice",
+            "email": "alice@example.com",
+            "password": "Str0ng!Pass"
+        }))
+        .await;
+
+    let first = app.server.post("/api/users/refresh").await;
+    first.assert_status_ok();
+
+    let second = app.server.post("/api/users/refresh").await;
+    second.assert_status_ok();
+}
+
 // ==== Logout ====
 
 #[tokio::test]
@@ -249,6 +301,10 @@ async fn logout_clears_session() {
     app.server.post("/api/users/logout").await;
 
     // me should now fail
-    let response = app.server.get("/api/users/me").expect_failure().await;
-    response.assert_status_unauthorized();
+    let me = app.server.get("/api/users/me").expect_failure().await;
+    me.assert_status_unauthorized();
+
+    // refresh should now fail as well
+    let refresh = app.server.post("/api/users/refresh").expect_failure().await;
+    refresh.assert_status_unauthorized();
 }
