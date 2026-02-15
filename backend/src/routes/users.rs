@@ -14,9 +14,14 @@ use axum_extra::extract::{
     cookie::{Cookie, SameSite},
 };
 use chrono::Duration;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
+
+const ACCESS_TOKEN_LIFETIME: Duration = Duration::minutes(15);
+const REFRESH_TOKEN_LIFETIME: Duration = Duration::days(30);
+const ACCESS_COOKIE: &str = "token";
+const REFRESH_COOKIE: &str = "refresh_token";
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -26,9 +31,50 @@ pub fn routes() -> Router<AppState> {
         .route("/{id}/password", post(update_password))
         .route("/auth", post(authenticate))
         .route("/register", post(register))
+        .route("/refresh", post(refresh))
         .route("/resend-verification", post(resend_verification))
         .route("/verify-email", post(verify_email))
         .route("/logout", post(logout))
+}
+
+#[derive(Serialize)]
+struct AuthResponse {
+    #[serde(flatten)]
+    user: User,
+    access_token: String,
+}
+
+async fn issue_session(
+    cookies: CookieJar,
+    state: &AppState,
+    repo: &UserRepository<'_>,
+    user: User,
+) -> Result<(CookieJar, Json<AuthResponse>)> {
+    let access_token = Claims::new(user.id, user.admin, &user.username, ACCESS_TOKEN_LIFETIME)
+        .encode(&state.config.jwt_secret)?;
+
+    let refresh_token = repo
+        .create_refresh_token(user.id, REFRESH_TOKEN_LIFETIME)
+        .await?;
+
+    // TODO: Set secure flag in production
+    let access_cookie = Cookie::build((ACCESS_COOKIE, access_token.clone()))
+        .same_site(SameSite::Lax)
+        .http_only(true)
+        .path("/")
+        .build();
+
+    // TODO: Set secure flag in production
+    let refresh_cookie = Cookie::build((REFRESH_COOKIE, refresh_token))
+        .same_site(SameSite::Lax)
+        .http_only(true)
+        .path("/")
+        .build();
+
+    Ok((
+        cookies.add(access_cookie).add(refresh_cookie),
+        Json(AuthResponse { user, access_token }),
+    ))
 }
 
 async fn send_verification_email(
@@ -218,7 +264,7 @@ async fn authenticate(
     cookies: CookieJar,
     State(state): State<AppState>,
     Json(payload): Json<AuthRequest>,
-) -> Result<(CookieJar, Json<User>)> {
+) -> Result<(CookieJar, Json<AuthResponse>)> {
     debug!(username = %payload.username, "Authentication attempt");
     let repo = UserRepository::new(&state.db);
     let user = repo
@@ -229,17 +275,7 @@ async fn authenticate(
     user.verify_password(&payload.password)?;
     info!(user_id = %user.id, username = %user.username, "Authentication succeeded");
 
-    let token = Claims::new(user.id, user.admin, &user.username, Duration::hours(1))
-        .encode(&state.config.jwt_secret)?;
-
-    // TODO: Set secure flag in production
-    let cookie = Cookie::build(("token", token))
-        .same_site(SameSite::Lax)
-        .http_only(true)
-        .path("/")
-        .build();
-
-    Ok((cookies.add(cookie), Json(user)))
+    issue_session(cookies, &state, &repo, user).await
 }
 
 #[derive(Deserialize)]
@@ -254,7 +290,7 @@ async fn register(
     cookies: CookieJar,
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<(CookieJar, Json<User>)> {
+) -> Result<(CookieJar, Json<AuthResponse>)> {
     info!(username = %payload.username, email = %payload.email, "User registration requested");
     let repo = UserRepository::new(&state.db);
     let user = repo
@@ -265,17 +301,29 @@ async fn register(
     send_verification_email(&state, &repo, &user).await?;
     info!(user_id = %user.id, "Verification email sent");
 
-    let token = Claims::new(user.id, user.admin, &user.username, Duration::hours(1))
-        .encode(&state.config.jwt_secret)?;
+    issue_session(cookies, &state, &repo, user).await
+}
 
-    // TODO: Set secure flag in production
-    let cookie = Cookie::build(("token", token))
-        .same_site(SameSite::Lax)
-        .http_only(true)
-        .path("/")
-        .build();
+/// Refresh access token from a long-lived refresh token cookie.
+async fn refresh(
+    cookies: CookieJar,
+    State(state): State<AppState>,
+) -> Result<(CookieJar, Json<AuthResponse>)> {
+    let Some(refresh_token_cookie) = cookies.get(REFRESH_COOKIE) else {
+        return Err(Error::Claims(ClaimsError::TokenMissing));
+    };
 
-    Ok((cookies.add(cookie), Json(user)))
+    let repo = UserRepository::new(&state.db);
+    let token = refresh_token_cookie.value();
+    let user_id = repo
+        .validate_refresh_token(token)
+        .await?
+        .ok_or(Error::Claims(ClaimsError::TokenMissing))?;
+
+    let user = repo.find_by_id(user_id).await?.ok_or(Error::NotFound)?;
+    let _ = repo.revoke_refresh_token(token).await?;
+
+    issue_session(cookies, &state, &repo, user).await
 }
 
 /// Resend a verification email for the authenticated user.
@@ -323,7 +371,17 @@ async fn verify_email(
 }
 
 /// Logout the current user by clearing the token cookie.
-async fn logout(cookies: CookieJar) -> CookieJar {
+async fn logout(cookies: CookieJar, State(state): State<AppState>) -> CookieJar {
     debug!("Logout requested");
-    cookies.remove(Cookie::from("token"))
+
+    if let Some(refresh_token_cookie) = cookies.get(REFRESH_COOKIE) {
+        let repo = UserRepository::new(&state.db);
+        let _ = repo
+            .revoke_refresh_token(refresh_token_cookie.value())
+            .await;
+    }
+
+    cookies
+        .remove(Cookie::from(ACCESS_COOKIE))
+        .remove(Cookie::from(REFRESH_COOKIE))
 }

@@ -1,5 +1,6 @@
 use crate::models::{User, UserError};
 use crate::prelude::*;
+use chrono::Duration;
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -14,6 +15,11 @@ impl<'a> UserRepository<'a> {
     }
 
     fn hash_verification_token(token: &str) -> String {
+        let digest = Sha256::digest(token.as_bytes());
+        format!("{digest:x}")
+    }
+
+    fn hash_refresh_token(token: &str) -> String {
         let digest = Sha256::digest(token.as_bytes());
         format!("{digest:x}")
     }
@@ -124,6 +130,66 @@ impl<'a> UserRepository<'a> {
         .await?;
 
         Ok(true)
+    }
+
+    /// Creates and stores a refresh token, returning the raw token.
+    pub async fn create_refresh_token(&self, user_id: Uuid, lifetime: Duration) -> Result<String> {
+        let token = format!("{}.{}", Uuid::new_v4(), Uuid::new_v4());
+        let token_hash = Self::hash_refresh_token(&token);
+
+        sqlx::query!(
+            r#"
+            INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at)
+            VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 second'))
+            "#,
+            Uuid::new_v4(),
+            user_id,
+            token_hash,
+            lifetime.num_seconds() as f64,
+        )
+        .execute(self.db)
+        .await?;
+
+        Ok(token)
+    }
+
+    /// Returns the user id of a valid refresh token.
+    pub async fn validate_refresh_token(&self, token: &str) -> Result<Option<Uuid>> {
+        let token_hash = Self::hash_refresh_token(token);
+
+        let row = sqlx::query!(
+            r#"
+            SELECT user_id
+            FROM refresh_tokens
+            WHERE token_hash = $1
+              AND revoked_at IS NULL
+              AND expires_at > NOW()
+            "#,
+            token_hash,
+        )
+        .fetch_optional(self.db)
+        .await?;
+
+        Ok(row.map(|record| record.user_id))
+    }
+
+    /// Revokes a refresh token by value.
+    pub async fn revoke_refresh_token(&self, token: &str) -> Result<bool> {
+        let token_hash = Self::hash_refresh_token(token);
+
+        let result = sqlx::query!(
+            r#"
+            UPDATE refresh_tokens
+            SET revoked_at = NOW()
+            WHERE token_hash = $1
+              AND revoked_at IS NULL
+            "#,
+            token_hash,
+        )
+        .execute(self.db)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
     }
 
     /// Find a user by their ID.

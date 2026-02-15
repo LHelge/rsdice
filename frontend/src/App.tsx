@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
-import { getCurrentUser, login, logout, type User } from "./api/auth";
+import { getCurrentUser, login, logout, refreshSession, type User } from "./api/auth";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
 import Profile from "./pages/Profile";
@@ -23,7 +23,8 @@ function App() {
 
   useEffect(() => {
     const bootstrapAuth = async () => {
-      await refreshCurrentUser();
+      const user = await refreshSession();
+      setCurrentUser(user);
       setAuthLoading(false);
     };
 
