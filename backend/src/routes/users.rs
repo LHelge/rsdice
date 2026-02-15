@@ -153,6 +153,7 @@ async fn update_user(
 
 #[derive(Deserialize)]
 struct UpdatePasswordRequest {
+    current_password: String,
     password: String,
 }
 
@@ -168,7 +169,14 @@ async fn update_password(
         warn!(requester_id = %claims.sub, target_user_id = %id, "Unauthorized password update attempt");
         return Err(Error::NotFound);
     }
+
     let repo = UserRepository::new(&state.db);
+
+    if claims.sub == id {
+        let user = repo.find_by_id(id).await?.ok_or(Error::NotFound)?;
+        user.verify_password(&payload.current_password)?;
+    }
+
     let updated = repo.update_password(id, &payload.password).await?;
     if !updated {
         warn!(requester_id = %claims.sub, target_user_id = %id, "Password update target not found");

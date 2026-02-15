@@ -12,11 +12,17 @@ export default function Register({ onRegistered }: RegisterProps) {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [repeatPassword, setRepeatPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (password !== repeatPassword) {
+            setError("Passwords do not match.");
+            return;
+        }
+
         setSubmitting(true);
         setError(null);
 
@@ -81,6 +87,20 @@ export default function Register({ onRegistered }: RegisterProps) {
                         required
                     />
                     <p className="mt-1 text-xs text-gray-500">Use at least 10 chars with upper/lowercase, number and symbol.</p>
+                </div>
+
+                <div>
+                    <label htmlFor="register-repeat-password" className="block text-sm text-gray-300 mb-1">
+                        Repeat password
+                    </label>
+                    <input
+                        id="register-repeat-password"
+                        type="password"
+                        className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={repeatPassword}
+                        onChange={(event) => setRepeatPassword(event.target.value)}
+                        required
+                    />
                 </div>
 
                 {error && <p className="text-sm text-red-400">{error}</p>}
