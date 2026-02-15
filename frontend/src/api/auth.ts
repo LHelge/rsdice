@@ -6,6 +6,10 @@ export type User = {
     admin: boolean;
 };
 
+type SessionResponse = User & {
+    access_token: string;
+};
+
 type LoginRequest = {
     username: string;
     password: string;
@@ -26,11 +30,46 @@ export class ApiError extends Error {
     }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+let accessToken: string | null = null;
+
+function setAccessToken(token: string | null) {
+    accessToken = token;
+}
+
+function parseAuthResponse(session: SessionResponse): User {
+    setAccessToken(session.access_token);
+    return {
+        id: session.id,
+        username: session.username,
+        email: session.email,
+        email_verified: session.email_verified,
+        admin: session.admin,
+    };
+}
+
+type RequestOptions = {
+    auth?: boolean;
+    retryOnUnauthorized?: boolean;
+};
+
+async function request<T>(path: string, init?: RequestInit, options?: RequestOptions): Promise<T> {
+    const headers = new Headers(init?.headers ?? {});
+    if (options?.auth && accessToken) {
+        headers.set("Authorization", `Bearer ${accessToken}`);
+    }
+
     const response = await fetch(path, {
         credentials: "same-origin",
+        headers,
         ...init,
     });
+
+    if (response.status === 401 && options?.auth && options.retryOnUnauthorized !== false) {
+        const refreshed = await refreshSession();
+        if (refreshed) {
+            return request(path, init, { ...options, retryOnUnauthorized: false });
+        }
+    }
 
     if (!response.ok) {
         const message = (await response.text()) || "Request failed";
@@ -60,26 +99,42 @@ function jsonRequest(body: unknown): RequestInit {
 }
 
 export function getCurrentUser() {
-    return request<User>("/api/users/me");
+    return request<User>("/api/users/me", undefined, { auth: true });
 }
 
-export function login(payload: LoginRequest) {
-    return request<User>("/api/users/auth", jsonRequest(payload));
+export async function login(payload: LoginRequest) {
+    const session = await request<SessionResponse>("/api/users/auth", jsonRequest(payload));
+    return parseAuthResponse(session);
 }
 
-export function register(payload: RegisterRequest) {
-    return request<User>("/api/users/register", jsonRequest(payload));
+export async function register(payload: RegisterRequest) {
+    const session = await request<SessionResponse>("/api/users/register", jsonRequest(payload));
+    return parseAuthResponse(session);
 }
 
-export function logout() {
-    return request<void>("/api/users/logout", { method: "POST" });
+export async function refreshSession() {
+    try {
+        const session = await request<SessionResponse>("/api/users/refresh", { method: "POST" });
+        return parseAuthResponse(session);
+    } catch {
+        setAccessToken(null);
+        return null;
+    }
+}
+
+export async function logout() {
+    try {
+        await request<void>("/api/users/logout", { method: "POST" });
+    } finally {
+        setAccessToken(null);
+    }
 }
 
 export function changePassword(userId: string, currentPassword: string, password: string) {
     return request<void>(`/api/users/${userId}/password`, jsonRequest({
         current_password: currentPassword,
         password,
-    }));
+    }), { auth: true });
 }
 
 export function verifyEmail(token: string) {
