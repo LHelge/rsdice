@@ -208,7 +208,10 @@ async fn update_own_password_succeeds() {
 
     app.server
         .post(&format!("/api/users/{id}/password"))
-        .json(&json!({ "password": "NewStr0ng!Pass" }))
+        .json(&json!({
+            "current_password": "Str0ng!Pass",
+            "password": "NewStr0ng!Pass"
+        }))
         .await;
 
     // Authenticate with the new password
@@ -219,6 +222,25 @@ async fn update_own_password_succeeds() {
             "password": "NewStr0ng!Pass"
         }))
         .await;
+}
+
+#[tokio::test]
+async fn update_own_password_with_wrong_current_password_fails() {
+    let app = TestApp::spawn().await;
+    let user: serde_json::Value = app.register("alice", "alice@example.com").await;
+    let id = user["id"].as_str().unwrap();
+
+    let response = app
+        .server
+        .post(&format!("/api/users/{id}/password"))
+        .json(&json!({
+            "current_password": "WrongStr0ng!Pass",
+            "password": "NewStr0ng!Pass"
+        }))
+        .expect_failure()
+        .await;
+
+    response.assert_status_bad_request();
 }
 
 #[tokio::test]
@@ -238,7 +260,10 @@ async fn update_other_users_password_as_non_admin_fails() {
     let response = app
         .server
         .post(&format!("/api/users/{}/password", bob_id.0))
-        .json(&json!({ "password": "NewStr0ng!Pass" }))
+        .json(&json!({
+            "current_password": "Str0ng!Pass",
+            "password": "NewStr0ng!Pass"
+        }))
         .expect_failure()
         .await;
 

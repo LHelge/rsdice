@@ -33,6 +33,9 @@ pub enum UserError {
     #[error("Invalid or expired verification token.")]
     InvalidVerificationToken,
 
+    #[error("Invalid or expired password reset token.")]
+    InvalidPasswordResetToken,
+
     #[error("Email is already verified.")]
     EmailAlreadyVerified,
 }

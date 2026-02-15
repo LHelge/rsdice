@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use axum::{
     extract::FromRequestParts,
-    http::{StatusCode, request::Parts},
+    http::{StatusCode, header, request::Parts},
     response::IntoResponse,
 };
 use axum_extra::extract::CookieJar;
@@ -80,8 +80,14 @@ impl FromRequestParts<AppState> for Claims {
     type Rejection = ClaimsError;
 
     async fn from_request_parts(parts: &mut Parts, state: &AppState) -> ClaimsResult<Self> {
-        let cookies = CookieJar::from_headers(&parts.headers);
+        if let Some(auth) = parts.headers.get(header::AUTHORIZATION)
+            && let Ok(value) = auth.to_str()
+            && let Some(token) = value.strip_prefix("Bearer ")
+        {
+            return Claims::decode(token.trim(), &state.config.jwt_secret);
+        }
 
+        let cookies = CookieJar::from_headers(&parts.headers);
         if let Some(token) = cookies.get("token") {
             Ok(Claims::decode(token.value(), &state.config.jwt_secret)?)
         } else {
