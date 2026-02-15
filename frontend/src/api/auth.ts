@@ -75,8 +75,11 @@ export function logout() {
     return request<void>("/api/users/logout", { method: "POST" });
 }
 
-export function changePassword(userId: string, password: string) {
-    return request<void>(`/api/users/${userId}/password`, jsonRequest({ password }));
+export function changePassword(userId: string, currentPassword: string, password: string) {
+    return request<void>(`/api/users/${userId}/password`, jsonRequest({
+        current_password: currentPassword,
+        password,
+    }));
 }
 
 export function verifyEmail(token: string) {

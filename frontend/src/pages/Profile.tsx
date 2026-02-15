@@ -7,20 +7,30 @@ type ProfileProps = {
 };
 
 export default function Profile({ user }: ProfileProps) {
-    const [password, setPassword] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [repeatNewPassword, setRepeatNewPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
     const handlePasswordChange = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        if (newPassword !== repeatNewPassword) {
+            setError("New passwords do not match.");
+            return;
+        }
+
         setSubmitting(true);
         setError(null);
         setSuccess(null);
 
         try {
-            await changePassword(user.id, password);
-            setPassword("");
+            await changePassword(user.id, currentPassword, newPassword);
+            setCurrentPassword("");
+            setNewPassword("");
+            setRepeatNewPassword("");
             setSuccess("Password updated successfully.");
         } catch (submitError) {
             if (submitError instanceof ApiError) {
@@ -61,6 +71,20 @@ export default function Profile({ user }: ProfileProps) {
                 <h2 className="text-xl font-semibold mb-4">Change Password</h2>
                 <form className="space-y-4" onSubmit={handlePasswordChange}>
                     <div>
+                        <label htmlFor="profile-current-password" className="block text-sm text-gray-300 mb-1">
+                            Current password
+                        </label>
+                        <input
+                            id="profile-current-password"
+                            type="password"
+                            className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            value={currentPassword}
+                            onChange={(event) => setCurrentPassword(event.target.value)}
+                            required
+                        />
+                    </div>
+
+                    <div>
                         <label htmlFor="profile-password" className="block text-sm text-gray-300 mb-1">
                             New password
                         </label>
@@ -68,11 +92,25 @@ export default function Profile({ user }: ProfileProps) {
                             id="profile-password"
                             type="password"
                             className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            value={password}
-                            onChange={(event) => setPassword(event.target.value)}
+                            value={newPassword}
+                            onChange={(event) => setNewPassword(event.target.value)}
                             required
                         />
                         <p className="mt-1 text-xs text-gray-500">Use at least 10 chars with upper/lowercase, number and symbol.</p>
+                    </div>
+
+                    <div>
+                        <label htmlFor="profile-repeat-password" className="block text-sm text-gray-300 mb-1">
+                            Repeat new password
+                        </label>
+                        <input
+                            id="profile-repeat-password"
+                            type="password"
+                            className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            value={repeatNewPassword}
+                            onChange={(event) => setRepeatNewPassword(event.target.value)}
+                            required
+                        />
                     </div>
 
                     {error && <p className="text-sm text-red-400">{error}</p>}
