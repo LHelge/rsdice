@@ -1,3 +1,4 @@
+mod email;
 mod models;
 mod prelude;
 mod repositories;
