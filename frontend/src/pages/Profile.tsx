@@ -1,8 +1,13 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { ApiError, changePassword, type User } from "../api/auth";
+import { changePassword, type User } from "../api/auth";
+import FormField from "../components/FormField";
 import PasswordRequirements from "../components/PasswordRequirements";
-import { checkPassword, fieldClass, isPasswordValid } from "../utils/validation";
+import StatusMessage from "../components/StatusMessage";
+import SubmitButton from "../components/SubmitButton";
+import { fieldClass } from "../utils/validation";
+import { useFormSubmit } from "../utils/useFormSubmit";
+import { usePasswordFields } from "../utils/usePasswordFields";
 
 type ProfileProps = {
     user: User;
@@ -10,50 +15,35 @@ type ProfileProps = {
 
 export default function Profile({ user }: ProfileProps) {
     const [currentPassword, setCurrentPassword] = useState("");
-    const [newPassword, setNewPassword] = useState("");
-    const [repeatNewPassword, setRepeatNewPassword] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
-
-    const [touched, setTouched] = useState({
-        currentPassword: false,
-        newPassword: false,
-        repeatNewPassword: false,
-    });
-    const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }));
-
-    const passwordRules = checkPassword(newPassword);
-    const newPasswordValid = isPasswordValid(passwordRules);
-    const repeatValid = newPassword.length > 0 && repeatNewPassword === newPassword;
+    const [currentTouched, setCurrentTouched] = useState(false);
     const currentPasswordValid = currentPassword.length > 0;
+
+    const {
+        password: newPassword, setPassword: setNewPassword,
+        repeat: repeatNewPassword, setRepeat: setRepeatNewPassword,
+        touched, touch, touchAll,
+        rules, passwordValid: newPasswordValid, repeatValid,
+        reset: resetPasswordFields,
+    } = usePasswordFields();
+
+    const { submitting, error, wrapSubmit } = useFormSubmit("Unable to update password.");
+    const [success, setSuccess] = useState<string | null>(null);
 
     const handlePasswordChange = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setTouched({ currentPassword: true, newPassword: true, repeatNewPassword: true });
+        setCurrentTouched(true);
+        touchAll();
 
         if (!currentPasswordValid || !newPasswordValid || !repeatValid) return;
 
-        setSubmitting(true);
-        setError(null);
         setSuccess(null);
-
-        try {
+        await wrapSubmit(async () => {
             await changePassword(user.id, currentPassword, newPassword);
             setCurrentPassword("");
-            setNewPassword("");
-            setRepeatNewPassword("");
-            setTouched({ currentPassword: false, newPassword: false, repeatNewPassword: false });
+            setCurrentTouched(false);
+            resetPasswordFields();
             setSuccess("Password updated successfully.");
-        } catch (submitError) {
-            if (submitError instanceof ApiError) {
-                setError(submitError.message);
-            } else {
-                setError("Unable to update password.");
-            }
-        } finally {
-            setSubmitting(false);
-        }
+        });
     };
 
     return (
@@ -83,68 +73,69 @@ export default function Profile({ user }: ProfileProps) {
             <section className="bg-gray-800 border border-gray-700 rounded-xl p-6">
                 <h2 className="text-xl font-semibold mb-4">Change Password</h2>
                 <form className="space-y-4" onSubmit={handlePasswordChange}>
-                    <div>
-                        <label htmlFor="profile-current-password" className="block text-sm text-gray-300 mb-1">
-                            Current password
-                        </label>
+                    <FormField
+                        label="Current password"
+                        id="profile-current-password"
+                        touched={currentTouched}
+                        valid={currentPasswordValid}
+                        error="Enter your current password."
+                    >
                         <input
                             id="profile-current-password"
                             type="password"
-                            className={fieldClass(touched.currentPassword, currentPasswordValid)}
+                            className={fieldClass(currentTouched, currentPasswordValid)}
                             value={currentPassword}
-                            onChange={(event) => setCurrentPassword(event.target.value)}
-                            onBlur={() => touch("currentPassword")}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            onBlur={() => setCurrentTouched(true)}
                             required
                         />
-                        {touched.currentPassword && !currentPasswordValid && (
-                            <p className="mt-1 text-xs text-red-400">Enter your current password.</p>
-                        )}
-                    </div>
+                    </FormField>
 
-                    <div>
-                        <label htmlFor="profile-password" className="block text-sm text-gray-300 mb-1">
-                            New password
-                        </label>
+                    <FormField
+                        label="New password"
+                        id="profile-password"
+                        touched={touched.password}
+                        valid={newPasswordValid}
+                    >
                         <input
                             id="profile-password"
                             type="password"
-                            className={fieldClass(touched.newPassword, newPasswordValid)}
+                            className={fieldClass(touched.password, newPasswordValid)}
                             value={newPassword}
-                            onChange={(event) => setNewPassword(event.target.value)}
-                            onBlur={() => touch("newPassword")}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            onBlur={() => touch("password")}
                             required
                         />
-                        {newPassword.length > 0 && <PasswordRequirements rules={passwordRules} />}
-                    </div>
+                        {newPassword.length > 0 && <PasswordRequirements rules={rules} />}
+                    </FormField>
 
-                    <div>
-                        <label htmlFor="profile-repeat-password" className="block text-sm text-gray-300 mb-1">
-                            Repeat new password
-                        </label>
+                    <FormField
+                        label="Repeat new password"
+                        id="profile-repeat-password"
+                        touched={touched.repeat}
+                        valid={repeatValid}
+                        error={repeatNewPassword.length > 0 ? "Passwords do not match." : undefined}
+                    >
                         <input
                             id="profile-repeat-password"
                             type="password"
-                            className={fieldClass(touched.repeatNewPassword, repeatValid)}
+                            className={fieldClass(touched.repeat, repeatValid)}
                             value={repeatNewPassword}
-                            onChange={(event) => setRepeatNewPassword(event.target.value)}
-                            onBlur={() => touch("repeatNewPassword")}
+                            onChange={(e) => setRepeatNewPassword(e.target.value)}
+                            onBlur={() => touch("repeat")}
                             required
                         />
-                        {touched.repeatNewPassword && !repeatValid && repeatNewPassword.length > 0 && (
-                            <p className="mt-1 text-xs text-red-400">Passwords do not match.</p>
-                        )}
-                    </div>
+                    </FormField>
 
-                    {error && <p className="text-sm text-red-400">{error}</p>}
-                    {success && <p className="text-sm text-green-400">{success}</p>}
+                    <StatusMessage type="error" message={error} />
+                    <StatusMessage type="success" message={success} />
 
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
-                    >
-                        {submitting ? "Updating..." : "Update password"}
-                    </button>
+                    <SubmitButton
+                        submitting={submitting}
+                        label="Update password"
+                        loadingLabel="Updating..."
+                        fullWidth={false}
+                    />
                 </form>
             </section>
         </div>

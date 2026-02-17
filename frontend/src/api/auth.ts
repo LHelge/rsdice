@@ -52,7 +52,7 @@ type RequestOptions = {
     retryOnUnauthorized?: boolean;
 };
 
-async function request<T>(path: string, init?: RequestInit, options?: RequestOptions): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit, options?: RequestOptions): Promise<T> {
     const headers = new Headers(init?.headers ?? {});
     if (options?.auth && accessToken) {
         headers.set("Authorization", `Bearer ${accessToken}`);

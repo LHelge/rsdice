@@ -2,8 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import type { FormEvent } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { Dices, Github, LogIn, LogOut, Scale, User } from "lucide-react";
-import { ApiError, type User as AuthUser } from "../api/auth";
+import { type User as AuthUser } from "../api/auth";
+import FormField from "./FormField";
 import HealthIndicator from "./HealthIndicator";
+import StatusMessage from "./StatusMessage";
+import SubmitButton from "./SubmitButton";
+import { BASE_INPUT_CLASS } from "../utils/validation";
+import { useFormSubmit } from "../utils/useFormSubmit";
 
 type LayoutProps = {
   authLoading: boolean;
@@ -25,30 +30,19 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loadingLogin, setLoadingLogin] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const { submitting: loadingLogin, error: loginError, wrapSubmit } = useFormSubmit("Unable to log in.");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoadingLogin(true);
-    setLoginError(null);
-
-    try {
+    await wrapSubmit(async () => {
       await onLogin(username, password);
       setUsername("");
       setPassword("");
       setMenuOpen(false);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setLoginError(error.message);
-      } else {
-        setLoginError("Unable to log in.");
-      }
-    } finally {
-      setLoadingLogin(false);
-    }
+    });
   };
 
   const handleLogout = async () => {
@@ -97,41 +91,42 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
               {menuOpen && (
                 <div className="absolute right-0 mt-2 w-80 rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-xl z-50">
                   <form className="space-y-3" onSubmit={handleSubmit}>
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1" htmlFor="login-username">
-                        Username
-                      </label>
+                    <FormField
+                      label="Username"
+                      id="login-username"
+                      touched={false}
+                      valid={true}
+                      labelClass="block text-xs text-gray-400 mb-1"
+                    >
                       <input
                         id="login-username"
-                        className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className={BASE_INPUT_CLASS}
                         value={username}
                         onChange={(event) => setUsername(event.target.value)}
                         required
                       />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1" htmlFor="login-password">
-                        Password
-                      </label>
+                    </FormField>
+
+                    <FormField
+                      label="Password"
+                      id="login-password"
+                      touched={false}
+                      valid={true}
+                      labelClass="block text-xs text-gray-400 mb-1"
+                    >
                       <input
                         id="login-password"
                         type="password"
-                        className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className={BASE_INPUT_CLASS}
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         required
                       />
-                    </div>
+                    </FormField>
 
-                    {loginError && <p className="text-sm text-red-400">{loginError}</p>}
+                    <StatusMessage type="error" message={loginError} />
 
-                    <button
-                      type="submit"
-                      disabled={loadingLogin}
-                      className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
-                    >
-                      {loadingLogin ? "Logging in..." : "Login"}
-                    </button>
+                    <SubmitButton submitting={loadingLogin} label="Login" loadingLabel="Logging in..." />
 
                     <p className="text-sm text-gray-400 text-center">
                       <Link

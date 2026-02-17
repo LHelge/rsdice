@@ -1,3 +1,5 @@
+import { request } from "./auth";
+
 export type GameState = "WaitingForPlayers" | { InProgress: { turn: number } } | "Finished";
 
 export type GameCreator = {
@@ -45,26 +47,9 @@ export function gameStateLabel(state: GameState): string {
 }
 
 export async function listGames(): Promise<GameListItem[]> {
-    const response = await fetch("/api/games", {
-        credentials: "same-origin",
-    });
-
-    if (!response.ok) {
-        throw new Error((await response.text()) || "Failed to fetch games");
-    }
-
-    return (await response.json()) as GameListItem[];
+    return request<GameListItem[]>("/api/games");
 }
 
 export async function createGame(): Promise<GameSnapshot> {
-    const response = await fetch("/api/games", {
-        method: "PUT",
-        credentials: "same-origin",
-    });
-
-    if (!response.ok) {
-        throw new Error((await response.text()) || "Failed to create game");
-    }
-
-    return (await response.json()) as GameSnapshot;
+    return request<GameSnapshot>("/api/games", { method: "PUT" }, { auth: true });
 }
