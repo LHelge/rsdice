@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ApiError, resetPassword } from "../api/auth";
+import PasswordRequirements from "../components/PasswordRequirements";
+import { checkPassword, fieldClass, isPasswordValid } from "../utils/validation";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -13,17 +15,23 @@ export default function ResetPassword() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [touched, setTouched] = useState({ password: false, repeatPassword: false });
+  const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }));
+
+  const passwordRules = checkPassword(password);
+  const passwordValid = isPasswordValid(passwordRules);
+  const repeatValid = password.length > 0 && repeatPassword === password;
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setTouched({ password: true, repeatPassword: true });
+
     if (!token) {
       setError("Missing password reset token.");
       return;
     }
 
-    if (password !== repeatPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+    if (!passwordValid || !repeatValid) return;
 
     setSubmitting(true);
     setError(null);
@@ -55,12 +63,13 @@ export default function ResetPassword() {
           <input
             id="new-password"
             type="password"
-            className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className={fieldClass(touched.password, passwordValid)}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            onBlur={() => touch("password")}
             required
           />
-          <p className="mt-1 text-xs text-gray-500">Use at least 10 chars with upper/lowercase, number and symbol.</p>
+          {password.length > 0 && <PasswordRequirements rules={passwordRules} />}
         </div>
 
         <div>
@@ -70,11 +79,15 @@ export default function ResetPassword() {
           <input
             id="repeat-password"
             type="password"
-            className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className={fieldClass(touched.repeatPassword, repeatValid)}
             value={repeatPassword}
             onChange={(event) => setRepeatPassword(event.target.value)}
+            onBlur={() => touch("repeatPassword")}
             required
           />
+          {touched.repeatPassword && !repeatValid && repeatPassword.length > 0 && (
+            <p className="mt-1 text-xs text-red-400">Passwords do not match.</p>
+          )}
         </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
