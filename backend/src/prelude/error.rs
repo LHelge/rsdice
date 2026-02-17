@@ -19,6 +19,9 @@ pub enum Error {
 
     #[error("Email error: {0}")]
     Email(#[from] EmailError),
+
+    #[error("Game error: {0}")]
+    GameError(#[from] common::GameError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -29,6 +32,7 @@ impl IntoResponse for Error {
             Error::Claims(e) => e.into_response(),
             Error::User(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
             Error::NotFound => StatusCode::NOT_FOUND.into_response(),
+            Error::GameError(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response(),
         }
     }

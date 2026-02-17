@@ -26,6 +26,7 @@ tower-http = { version = "0.6.8", features = ["trace"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 uuid = { version = "1.20.0", features = ["v4", "serde"] }
+common = { path = "../common" }
 
 [dev-dependencies]
 axum-test = "18.7.0"
