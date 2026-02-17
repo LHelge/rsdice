@@ -1,4 +1,5 @@
 use crate::email::{EmailClient, MailjetClient};
+use crate::games::Games;
 use crate::prelude::*;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -8,6 +9,7 @@ pub struct AppState {
     pub config: Arc<Config>,
     pub db: PgPool,
     pub email: Arc<dyn EmailClient>,
+    pub games: Games,
 }
 
 impl AppState {
@@ -16,6 +18,7 @@ impl AppState {
             email: Arc::new(MailjetClient::new(&config)),
             config: Arc::new(config),
             db,
+            games: Games::default(),
         }
     }
 
@@ -28,6 +31,7 @@ impl AppState {
             config: Arc::new(config),
             db,
             email,
+            games: Games::default(),
         }
     }
 }

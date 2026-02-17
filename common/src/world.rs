@@ -10,6 +10,25 @@ pub struct World {
 }
 
 impl World {
+    pub fn from_string(s: &str) -> Self {
+        let mut areas = HashMap::new();
+        for line in s.lines() {
+            let mut tiles = HashSet::new();
+            for tile_str in line.split_whitespace() {
+                if let Some((x_str, y_str)) = tile_str.split_once(',')
+                    && let (Ok(x), Ok(y)) = (x_str.parse(), y_str.parse())
+                {
+                    tiles.insert(crate::Tile::new(x, y));
+                }
+            }
+            if !tiles.is_empty() {
+                let area = Area::new(tiles);
+                areas.insert(area.id, area);
+            }
+        }
+        Self { areas }
+    }
+
     pub fn validate_attack(
         &self,
         from_id: Uuid,
@@ -181,5 +200,50 @@ mod tests {
 
         let world = world_from_areas(vec![mine, other]);
         assert!(world.is_winner(player));
+    }
+
+    #[test]
+    fn from_string_parses_valid_tiles() {
+        let input = "0,0 1,1\n2,2 3,3";
+        let world = World::from_string(input);
+
+        assert_eq!(world.areas.len(), 2);
+
+        for area in world.areas.values() {
+            assert!(area.tiles.len() == 2);
+        }
+    }
+
+    #[test]
+    fn from_string_ignores_invalid_tile_format() {
+        let input = "0,0 invalid 1,1\nno_comma";
+        let world = World::from_string(input);
+
+        // Should create an area only for lines containing at least one valid tile
+        assert_eq!(world.areas.len(), 1);
+    }
+
+    #[test]
+    fn from_string_skips_empty_lines() {
+        let input = "0,0 1,1\n\n2,2 3,3";
+        let world = World::from_string(input);
+
+        assert_eq!(world.areas.len(), 2);
+    }
+
+    #[test]
+    fn from_string_creates_no_areas_for_empty_input() {
+        let input = "";
+        let world = World::from_string(input);
+
+        assert_eq!(world.areas.len(), 0);
+    }
+
+    #[test]
+    fn from_string_creates_one_area_per_line() {
+        let input = "0,0 1,0\n2,0 3,0\n4,0 5,0";
+        let world = World::from_string(input);
+
+        assert_eq!(world.areas.len(), 3);
     }
 }

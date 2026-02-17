@@ -1,3 +1,4 @@
+mod games;
 mod health;
 mod users;
 
@@ -8,4 +9,5 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .nest("/health", health::routes())
         .nest("/users", users::routes())
+        .nest("/games", games::routes())
 }
