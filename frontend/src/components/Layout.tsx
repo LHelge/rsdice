@@ -50,31 +50,31 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-900 text-gray-100">
-      <header className="bg-gray-800 border-b border-gray-700">
+    <div className="min-h-screen flex flex-col bg-ctp-base text-ctp-text">
+      <header className="bg-ctp-surface0 border-b border-ctp-surface1">
         <nav className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-2 text-xl font-bold text-white hover:text-indigo-400 transition-colors">
-              <Dices className="w-5 h-5" /> rsdice
+          <div className="flex items-center gap-10">
+            <Link to="/" className="flex items-center gap-2 text-4xl font-bold text-ctp-text hover:text-ctp-mauve transition-colors">
+              <Dices className="w-10 h-10" /> rsdice
             </Link>
-            <Link to="/games" className="text-sm text-gray-300 hover:text-white transition-colors">
+            <Link to="/games" className="text-sm text-ctp-subtext1 hover:text-ctp-text transition-colors">
               Games
             </Link>
-            <Link to="/rules" className="text-sm text-gray-300 hover:text-white transition-colors">
+            <Link to="/rules" className="text-sm text-ctp-subtext1 hover:text-ctp-text transition-colors">
               Rules
             </Link>
           </div>
           {authLoading ? (
-            <span className="text-sm text-gray-400">Checking session...</span>
+            <span className="text-sm text-ctp-subtext0">Checking session...</span>
           ) : user ? (
             <div className="flex items-center gap-3">
-              <Link to="/profile" className="flex items-center gap-1.5 text-gray-200 hover:text-white transition-colors">
+              <Link to="/profile" className="flex items-center gap-1.5 text-ctp-subtext1 hover:text-ctp-text transition-colors">
                 <User className="w-4 h-4" />
                 {user.username}
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-sm font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-ctp-surface1 hover:bg-ctp-surface2 text-sm font-medium transition-colors"
               >
                 <LogOut className="w-4 h-4" /> Logout
               </button>
@@ -83,20 +83,20 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setMenuOpen((open) => !open)}
-                className="flex items-center gap-2 px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-md bg-ctp-mauve hover:bg-ctp-lavender text-ctp-base text-sm font-semibold transition-colors"
               >
                 <LogIn className="w-4 h-4" /> Login
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-80 rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-xl z-50">
+                <div className="absolute right-0 mt-2 w-80 rounded-lg border border-ctp-surface1 bg-ctp-surface0 p-4 shadow-xl z-50">
                   <form className="space-y-3" onSubmit={handleSubmit}>
                     <FormField
                       label="Username"
                       id="login-username"
                       touched={false}
                       valid={true}
-                      labelClass="block text-xs text-gray-400 mb-1"
+                      labelClass="block text-xs text-ctp-subtext0 mb-1"
                     >
                       <input
                         id="login-username"
@@ -112,7 +112,7 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
                       id="login-password"
                       touched={false}
                       valid={true}
-                      labelClass="block text-xs text-gray-400 mb-1"
+                      labelClass="block text-xs text-ctp-subtext0 mb-1"
                     >
                       <input
                         id="login-password"
@@ -128,23 +128,23 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
 
                     <SubmitButton submitting={loadingLogin} label="Login" loadingLabel="Logging in..." />
 
-                    <p className="text-sm text-gray-400 text-center">
+                    <p className="text-sm text-ctp-subtext0 text-center">
                       <Link
                         to="/forgot-password"
                         onClick={() => setMenuOpen(false)}
-                        className="text-indigo-400 hover:text-indigo-300"
+                        className="text-ctp-mauve hover:text-ctp-lavender"
                       >
                         Forgot your password?
                       </Link>
                     </p>
                   </form>
 
-                  <p className="mt-3 text-sm text-gray-400">
+                  <p className="mt-3 text-sm text-ctp-subtext0">
                     New here?{" "}
                     <Link
                       to="/register"
                       onClick={() => setMenuOpen(false)}
-                      className="text-indigo-400 hover:text-indigo-300"
+                      className="text-ctp-mauve hover:text-ctp-lavender"
                     >
                       Register a new user
                     </Link>
@@ -160,14 +160,14 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
         <Outlet />
       </main>
 
-      <footer className="border-t border-gray-700 bg-gray-800">
+      <footer className="border-t border-ctp-surface1 bg-ctp-surface0">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-ctp-overlay1">
             <a
               href="https://github.com/LHelge/rsdice"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 hover:text-gray-300 transition-colors"
+              className="inline-flex items-center gap-1 hover:text-ctp-subtext1 transition-colors"
             >
               <Github className="w-3.5 h-3.5" /> GitHub
             </a>
@@ -176,7 +176,7 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
               href="https://github.com/LHelge/rsdice/blob/main/LICENSE"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 hover:text-gray-300 transition-colors"
+              className="inline-flex items-center gap-1 hover:text-ctp-subtext1 transition-colors"
             >
               <Scale className="w-3.5 h-3.5" /> MIT License
             </a>

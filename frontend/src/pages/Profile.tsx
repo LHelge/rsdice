@@ -48,29 +48,29 @@ export default function Profile({ user }: ProfileProps) {
 
     return (
         <div className="max-w-3xl mx-auto px-6 py-16 space-y-8">
-            <section className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+            <section className="bg-ctp-surface0 border border-ctp-surface1 rounded-xl p-6">
                 <h1 className="text-3xl font-bold mb-4">Profile</h1>
                 <dl className="grid gap-3 sm:grid-cols-2 text-sm">
                     <div>
-                        <dt className="text-gray-400">Username</dt>
-                        <dd className="text-gray-100">{user.username}</dd>
+                        <dt className="text-ctp-subtext0">Username</dt>
+                        <dd className="text-ctp-text">{user.username}</dd>
                     </div>
                     <div>
-                        <dt className="text-gray-400">Email</dt>
-                        <dd className="text-gray-100">{user.email}</dd>
+                        <dt className="text-ctp-subtext0">Email</dt>
+                        <dd className="text-ctp-text">{user.email}</dd>
                     </div>
                     <div>
-                        <dt className="text-gray-400">Email verification</dt>
-                        <dd className="text-gray-100">{user.email_verified ? "Verified" : "Not verified"}</dd>
+                        <dt className="text-ctp-subtext0">Email verification</dt>
+                        <dd className="text-ctp-text">{user.email_verified ? "Verified" : "Not verified"}</dd>
                     </div>
                     <div>
-                        <dt className="text-gray-400">Role</dt>
-                        <dd className="text-gray-100">{user.admin ? "Admin" : "Player"}</dd>
+                        <dt className="text-ctp-subtext0">Role</dt>
+                        <dd className="text-ctp-text">{user.admin ? "Admin" : "Player"}</dd>
                     </div>
                 </dl>
             </section>
 
-            <section className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+            <section className="bg-ctp-surface0 border border-ctp-surface1 rounded-xl p-6">
                 <h2 className="text-xl font-semibold mb-4">Change Password</h2>
                 <form className="space-y-4" onSubmit={handlePasswordChange}>
                     <FormField

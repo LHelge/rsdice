@@ -20,7 +20,7 @@ export default function SubmitButton({
         <button
             type="submit"
             disabled={submitting}
-            className={`${fullWidth ? "w-full " : ""}rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60`}
+            className={`${fullWidth ? "w-full " : ""}rounded-md bg-ctp-mauve px-4 py-2 text-sm font-semibold text-ctp-base hover:bg-ctp-lavender disabled:opacity-60`}
         >
             {submitting ? loadingLabel : label}
         </button>

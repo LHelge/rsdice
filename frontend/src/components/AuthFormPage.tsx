@@ -26,17 +26,17 @@ export default function AuthFormPage({
 }: AuthFormPageProps) {
     return (
         <div className="max-w-md mx-auto px-6 py-16">
-            <h1 className="text-3xl font-bold text-white mb-2">{title}</h1>
-            <p className="text-gray-400 mb-8">{subtitle}</p>
+            <h1 className="text-3xl font-bold text-ctp-text mb-2">{title}</h1>
+            <p className="text-ctp-subtext0 mb-8">{subtitle}</p>
 
             <form
-                className="space-y-4 bg-gray-800 p-6 rounded-xl border border-gray-700"
+                className="space-y-4 bg-ctp-surface0 p-6 rounded-xl border border-ctp-surface1"
                 onSubmit={onSubmit}
             >
                 {children}
             </form>
 
-            <p className="mt-6 text-sm text-gray-400">{footer}</p>
+            <p className="mt-6 text-sm text-ctp-subtext0">{footer}</p>
         </div>
     );
 }

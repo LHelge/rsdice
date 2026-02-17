@@ -19,7 +19,7 @@ export default function PasswordRequirements({ rules }: PasswordRequirementsProp
             {RULES.map(({ key, label }) => {
                 const met = rules[key];
                 return (
-                    <li key={key} className={`flex items-center gap-1.5 text-xs ${met ? "text-green-400" : "text-red-400"}`}>
+                    <li key={key} className={`flex items-center gap-1.5 text-xs ${met ? "text-ctp-green" : "text-ctp-red"}`}>
                         {met ? <Check className="w-3.5 h-3.5 shrink-0" /> : <X className="w-3.5 h-3.5 shrink-0" />}
                         {label}
                     </li>

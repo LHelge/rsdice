@@ -7,7 +7,7 @@ type StatusMessageProps = {
 export default function StatusMessage({ type, message }: StatusMessageProps) {
     if (!message) return null;
     return (
-        <p className={`text-sm ${type === "error" ? "text-red-400" : "text-green-400"}`}>
+        <p className={`text-sm ${type === "error" ? "text-ctp-red" : "text-ctp-green"}`}>
             {message}
         </p>
     );

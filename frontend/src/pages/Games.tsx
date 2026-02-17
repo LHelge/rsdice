@@ -94,8 +94,8 @@ export default function Games({ authLoading, isAuthenticated }: GamesProps) {
         <div className="max-w-5xl mx-auto px-6 py-12 space-y-8">
             <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">Active Games</h1>
-                    <p className="text-gray-400 mt-1">Live list of games in waiting or in-progress state.</p>
+                    <h1 className="text-3xl font-bold text-ctp-text">Active Games</h1>
+                    <p className="text-ctp-subtext0 mt-1">Live list of games in waiting or in-progress state.</p>
                 </div>
 
                 {!authLoading && (
@@ -104,7 +104,7 @@ export default function Games({ authLoading, isAuthenticated }: GamesProps) {
                         onClick={handleCreateGame}
                         disabled={creating || !isAuthenticated}
                         title={!isAuthenticated ? "Log in to create a game" : undefined}
-                        className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                        className="px-4 py-2 rounded-md bg-ctp-mauve hover:bg-ctp-lavender disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-ctp-base"
                     >
                         {creating ? "Creating..." : "Create Game"}
                     </button>
@@ -112,17 +112,17 @@ export default function Games({ authLoading, isAuthenticated }: GamesProps) {
             </section>
 
             {error && (
-                <div className="rounded-md border border-red-500/40 bg-red-950/40 px-4 py-3 text-red-300">
+                <div className="rounded-md border border-ctp-red/40 bg-ctp-red/10 px-4 py-3 text-ctp-red">
                     {error}
                 </div>
             )}
 
             {loading ? (
-                <div className="rounded-lg border border-gray-700 bg-gray-800 px-6 py-10 text-center text-gray-300">
+                <div className="rounded-lg border border-ctp-surface1 bg-ctp-surface0 px-6 py-10 text-center text-ctp-subtext1">
                     Loading games...
                 </div>
             ) : activeGames.length === 0 ? (
-                <div className="rounded-lg border border-gray-700 bg-gray-800 px-6 py-10 text-center text-gray-300">
+                <div className="rounded-lg border border-ctp-surface1 bg-ctp-surface0 px-6 py-10 text-center text-ctp-subtext1">
                     No active games right now.
                 </div>
             ) : (
@@ -130,14 +130,14 @@ export default function Games({ authLoading, isAuthenticated }: GamesProps) {
                     {activeGames.map((game) => (
                         <li
                             key={game.id}
-                            className="rounded-lg border border-gray-700 bg-gray-800 px-4 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+                            className="rounded-lg border border-ctp-surface1 bg-ctp-surface0 px-4 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
                         >
                             <div className="space-y-1">
-                                <p className="text-sm text-gray-400">Game {game.id}</p>
-                                <p className="text-gray-200">
-                                    Creator: <span className="font-medium text-white">{game.creator.name}</span>
+                                <p className="text-sm text-ctp-subtext0">Game {game.id}</p>
+                                <p className="text-ctp-subtext1">
+                                    Creator: <span className="font-medium text-ctp-text">{game.creator.name}</span>
                                 </p>
-                                <p className="text-sm text-gray-300">
+                                <p className="text-sm text-ctp-subtext1">
                                     Players: {game.player_count} · State: {gameStateLabel(game.state)}
                                 </p>
                             </div>
@@ -148,7 +148,7 @@ export default function Games({ authLoading, isAuthenticated }: GamesProps) {
                                     onClick={() => isAuthenticated && navigate(`/game/${game.id}`)}
                                     disabled={!isAuthenticated}
                                     title={!isAuthenticated ? "Log in to join a game" : undefined}
-                                    className="self-start md:self-auto px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+                                    className="self-start md:self-auto px-4 py-2 rounded-md bg-ctp-surface1 hover:bg-ctp-surface2 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
                                 >
                                     Join Game
                                 </button>

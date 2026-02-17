@@ -57,7 +57,7 @@ export default function Register({ onRegistered }: RegisterProps) {
             footer={
                 <>
                     Already have an account?{" "}
-                    <Link to="/" className="text-indigo-400 hover:text-indigo-300">
+                    <Link to="/" className="text-ctp-mauve hover:text-ctp-lavender">
                         Go to login
                     </Link>
                 </>

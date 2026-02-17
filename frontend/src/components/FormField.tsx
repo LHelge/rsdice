@@ -27,7 +27,7 @@ export default function FormField({
     touched,
     valid,
     error,
-    labelClass = "block text-sm text-gray-300 mb-1",
+    labelClass = "block text-sm text-ctp-subtext1 mb-1",
     children,
 }: FormFieldProps) {
     return (
@@ -37,7 +37,7 @@ export default function FormField({
             </label>
             {children}
             {touched && !valid && error && (
-                <p className="mt-1 text-xs text-red-400">{error}</p>
+                <p className="mt-1 text-xs text-ctp-red">{error}</p>
             )}
         </div>
     );
