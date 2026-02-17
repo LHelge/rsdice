@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { ApiError, changePassword, type User } from "../api/auth";
+import PasswordRequirements from "../components/PasswordRequirements";
+import { checkPassword, fieldClass, isPasswordValid } from "../utils/validation";
 
 type ProfileProps = {
     user: User;
@@ -14,13 +16,23 @@ export default function Profile({ user }: ProfileProps) {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
+    const [touched, setTouched] = useState({
+        currentPassword: false,
+        newPassword: false,
+        repeatNewPassword: false,
+    });
+    const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }));
+
+    const passwordRules = checkPassword(newPassword);
+    const newPasswordValid = isPasswordValid(passwordRules);
+    const repeatValid = newPassword.length > 0 && repeatNewPassword === newPassword;
+    const currentPasswordValid = currentPassword.length > 0;
+
     const handlePasswordChange = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        setTouched({ currentPassword: true, newPassword: true, repeatNewPassword: true });
 
-        if (newPassword !== repeatNewPassword) {
-            setError("New passwords do not match.");
-            return;
-        }
+        if (!currentPasswordValid || !newPasswordValid || !repeatValid) return;
 
         setSubmitting(true);
         setError(null);
@@ -31,6 +43,7 @@ export default function Profile({ user }: ProfileProps) {
             setCurrentPassword("");
             setNewPassword("");
             setRepeatNewPassword("");
+            setTouched({ currentPassword: false, newPassword: false, repeatNewPassword: false });
             setSuccess("Password updated successfully.");
         } catch (submitError) {
             if (submitError instanceof ApiError) {
@@ -77,11 +90,15 @@ export default function Profile({ user }: ProfileProps) {
                         <input
                             id="profile-current-password"
                             type="password"
-                            className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className={fieldClass(touched.currentPassword, currentPasswordValid)}
                             value={currentPassword}
                             onChange={(event) => setCurrentPassword(event.target.value)}
+                            onBlur={() => touch("currentPassword")}
                             required
                         />
+                        {touched.currentPassword && !currentPasswordValid && (
+                            <p className="mt-1 text-xs text-red-400">Enter your current password.</p>
+                        )}
                     </div>
 
                     <div>
@@ -91,12 +108,13 @@ export default function Profile({ user }: ProfileProps) {
                         <input
                             id="profile-password"
                             type="password"
-                            className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className={fieldClass(touched.newPassword, newPasswordValid)}
                             value={newPassword}
                             onChange={(event) => setNewPassword(event.target.value)}
+                            onBlur={() => touch("newPassword")}
                             required
                         />
-                        <p className="mt-1 text-xs text-gray-500">Use at least 10 chars with upper/lowercase, number and symbol.</p>
+                        {newPassword.length > 0 && <PasswordRequirements rules={passwordRules} />}
                     </div>
 
                     <div>
@@ -106,11 +124,15 @@ export default function Profile({ user }: ProfileProps) {
                         <input
                             id="profile-repeat-password"
                             type="password"
-                            className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className={fieldClass(touched.repeatNewPassword, repeatValid)}
                             value={repeatNewPassword}
                             onChange={(event) => setRepeatNewPassword(event.target.value)}
+                            onBlur={() => touch("repeatNewPassword")}
                             required
                         />
+                        {touched.repeatNewPassword && !repeatValid && repeatNewPassword.length > 0 && (
+                            <p className="mt-1 text-xs text-red-400">Passwords do not match.</p>
+                        )}
                     </div>
 
                     {error && <p className="text-sm text-red-400">{error}</p>}
