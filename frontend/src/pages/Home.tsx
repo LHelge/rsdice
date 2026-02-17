@@ -9,7 +9,7 @@ export default function Home() {
           A turn-based online multiplayer dice game
         </p>
         <Link
-          to="/game"
+          to="/games"
           className="inline-block mt-8 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition-colors"
         >
           Play Now

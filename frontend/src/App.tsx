@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import { getCurrentUser, login, logout, refreshSession, type User } from "./api/auth";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
+import Games from "./pages/Games";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -59,7 +60,12 @@ function App() {
         }
       >
         <Route path="/" element={<Home />} />
-        <Route path="/game" element={<Game />} />
+        <Route
+          path="/games"
+          element={<Games authLoading={authLoading} isAuthenticated={currentUser !== null} />}
+        />
+        <Route path="/game/:id" element={<Game />} />
+        <Route path="/game" element={<Navigate to="/games" replace />} />
         <Route path="/register" element={<Register onRegistered={setCurrentUser} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
