@@ -95,7 +95,7 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-80 rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-xl">
+                <div className="absolute right-0 mt-2 w-80 rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-xl z-50">
                   <form className="space-y-3" onSubmit={handleSubmit}>
                     <div>
                       <label className="block text-xs text-gray-400 mb-1" htmlFor="login-username">
