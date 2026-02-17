@@ -47,9 +47,14 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
     <div className="min-h-screen flex flex-col bg-gray-900 text-gray-100">
       <header className="bg-gray-800 border-b border-gray-700">
         <nav className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <Link to="/" className="text-xl font-bold text-white hover:text-indigo-400 transition-colors">
-            🎲 rsdice
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/" className="text-xl font-bold text-white hover:text-indigo-400 transition-colors">
+              🎲 rsdice
+            </Link>
+            <Link to="/games" className="text-sm text-gray-300 hover:text-white transition-colors">
+              Games
+            </Link>
+          </div>
           {authLoading ? (
             <span className="text-sm text-gray-400">Checking session...</span>
           ) : user ? (
