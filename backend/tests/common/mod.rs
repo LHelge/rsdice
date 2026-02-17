@@ -30,6 +30,17 @@ impl TestApp {
     /// Spin up a Postgres container, run migrations, and return a ready
     /// [`TestApp`] backed by a [`MockEmailClient`].
     pub async fn spawn() -> Self {
+        Self::spawn_with_transport(false).await
+    }
+
+    /// Spin up a Postgres container and expose the app via HTTP transport.
+    ///
+    /// Required for tests that use Reqwest streaming or WebSocket upgrades.
+    pub async fn spawn_http() -> Self {
+        Self::spawn_with_transport(true).await
+    }
+
+    async fn spawn_with_transport(use_http_transport: bool) -> Self {
         let container = Postgres::default().start().await.unwrap();
         let host = container.get_host().await.unwrap();
         let port = container.get_host_port_ipv4(5432).await.unwrap();
@@ -53,14 +64,24 @@ impl TestApp {
             .layer(TraceLayer::new_for_http())
             .with_state(state);
 
-        let test_config = TestServerConfig {
-            save_cookies: true,
-            default_content_type: Some("application/json".to_string()),
-            expect_success_by_default: true,
-            ..TestServerConfig::default()
-        };
+        let server = if use_http_transport {
+            TestServer::builder()
+                .http_transport()
+                .save_cookies()
+                .default_content_type("application/json")
+                .expect_success_by_default()
+                .build(app)
+                .unwrap()
+        } else {
+            let test_config = TestServerConfig {
+                save_cookies: true,
+                default_content_type: Some("application/json".to_string()),
+                expect_success_by_default: true,
+                ..TestServerConfig::default()
+            };
 
-        let server = TestServer::new_with_config(app, test_config).unwrap();
+            TestServer::new_with_config(app, test_config).unwrap()
+        };
 
         Self {
             server,
