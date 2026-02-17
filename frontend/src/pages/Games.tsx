@@ -98,12 +98,13 @@ export default function Games({ authLoading, isAuthenticated }: GamesProps) {
                     <p className="text-gray-400 mt-1">Live list of games in waiting or in-progress state.</p>
                 </div>
 
-                {!authLoading && isAuthenticated && (
+                {!authLoading && (
                     <button
                         type="button"
                         onClick={handleCreateGame}
-                        disabled={creating}
-                        className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 font-semibold"
+                        disabled={creating || !isAuthenticated}
+                        title={!isAuthenticated ? "Log in to create a game" : undefined}
+                        className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                     >
                         {creating ? "Creating..." : "Create Game"}
                     </button>
@@ -141,11 +142,13 @@ export default function Games({ authLoading, isAuthenticated }: GamesProps) {
                                 </p>
                             </div>
 
-                            {isAuthenticated && !authLoading && (
+                            {!authLoading && (
                                 <button
                                     type="button"
-                                    onClick={() => navigate(`/game/${game.id}`)}
-                                    className="self-start md:self-auto px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600 text-sm font-semibold"
+                                    onClick={() => isAuthenticated && navigate(`/game/${game.id}`)}
+                                    disabled={!isAuthenticated}
+                                    title={!isAuthenticated ? "Log in to join a game" : undefined}
+                                    className="self-start md:self-auto px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
                                 >
                                     Join Game
                                 </button>
