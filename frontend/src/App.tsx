@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
+import PrivateRoute from "./components/PrivateRoute";
 import { getCurrentUser, login, logout, refreshSession, type User } from "./api/auth";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
@@ -75,13 +76,9 @@ function App() {
         <Route
           path="/profile"
           element={
-            authLoading ? (
-              <div className="max-w-3xl mx-auto px-6 py-16 text-center text-gray-300">Loading profile...</div>
-            ) : currentUser ? (
-              <Profile user={currentUser} />
-            ) : (
-              <Navigate to="/" replace />
-            )
+            <PrivateRoute authLoading={authLoading} user={currentUser}>
+              {currentUser && <Profile user={currentUser} />}
+            </PrivateRoute>
           }
         />
       </Route>

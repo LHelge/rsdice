@@ -20,6 +20,10 @@ export function isPasswordValid(rules: PasswordRules): boolean {
     return Object.values(rules).every(Boolean);
 }
 
+/** Base Tailwind classes for a plain (non-validated) text input. */
+export const BASE_INPUT_CLASS =
+    "w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500";
+
 /** Returns Tailwind border + focus-ring classes based on touched/valid state. */
 export function fieldClass(touched: boolean, valid: boolean): string {
     const base =

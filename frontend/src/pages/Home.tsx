@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Dices, Map, Network, Trophy } from "lucide-react";
+import SectionCard from "../components/SectionCard";
 
 export default function Home() {
   return (
@@ -18,41 +19,37 @@ export default function Home() {
       </section>
 
       <section className="grid gap-8 md:grid-cols-2">
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h2 className="flex items-center gap-2 text-lg font-semibold mb-3 text-indigo-400"><Map className="w-5 h-5" /> Conquer the Map</h2>
+        <SectionCard icon={<Map className="w-5 h-5" />} title="Conquer the Map">
           <p className="text-gray-300">
             Compete on a hex-tile map divided into areas. Each player starts
             with randomly assigned areas, each holding 1–8 dice. Attack
             adjacent enemy areas to expand your territory.
           </p>
-        </div>
+        </SectionCard>
 
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h2 className="flex items-center gap-2 text-lg font-semibold mb-3 text-indigo-400"><Dices className="w-5 h-5" /> Roll to Attack</h2>
+        <SectionCard icon={<Dices className="w-5 h-5" />} title="Roll to Attack">
           <p className="text-gray-300">
             Combat is resolved by dice rolls — the attacker and defender each
             roll the dice on their area. Roll higher than your opponent to
             capture their territory, but beware: a tie goes to the defender.
           </p>
-        </div>
+        </SectionCard>
 
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h2 className="flex items-center gap-2 text-lg font-semibold mb-3 text-indigo-400"><Network className="w-5 h-5" /> Connect Your Areas</h2>
+        <SectionCard icon={<Network className="w-5 h-5" />} title="Connect Your Areas">
           <p className="text-gray-300">
             At the end of your turn you receive bonus dice equal to your
             largest group of connected areas. Build and protect contiguous
             territory to grow stronger each round.
           </p>
-        </div>
+        </SectionCard>
 
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h2 className="flex items-center gap-2 text-lg font-semibold mb-3 text-indigo-400"><Trophy className="w-5 h-5" /> Last One Standing</h2>
+        <SectionCard icon={<Trophy className="w-5 h-5" />} title="Last One Standing">
           <p className="text-gray-300">
             Players are eliminated when they lose all their areas. Outplay
             your opponents, manage your reserves (up to 60 stored dice), and
             be the last player standing to win.
           </p>
-        </div>
+        </SectionCard>
       </section>
     </div>
   );
