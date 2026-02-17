@@ -49,7 +49,7 @@ export default function ResetPassword() {
       footer={
         <>
           Back to{" "}
-          <Link to="/" className="text-indigo-400 hover:text-indigo-300">
+          <Link to="/" className="text-ctp-mauve hover:text-ctp-lavender">
             login
           </Link>
         </>

@@ -22,13 +22,13 @@ export function isPasswordValid(rules: PasswordRules): boolean {
 
 /** Base Tailwind classes for a plain (non-validated) text input. */
 export const BASE_INPUT_CLASS =
-    "w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500";
+    "w-full rounded-md border border-ctp-surface1 bg-ctp-base px-3 py-2 text-sm text-ctp-text focus:outline-none focus:ring-2 focus:ring-ctp-mauve";
 
 /** Returns Tailwind border + focus-ring classes based on touched/valid state. */
 export function fieldClass(touched: boolean, valid: boolean): string {
     const base =
-        "w-full rounded-md border bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2";
-    if (!touched) return `${base} border-gray-600 focus:ring-indigo-500`;
-    if (valid) return `${base} border-green-500 focus:ring-green-500`;
-    return `${base} border-red-500 focus:ring-red-500`;
+        "w-full rounded-md border bg-ctp-base px-3 py-2 text-sm text-ctp-text focus:outline-none focus:ring-2";
+    if (!touched) return `${base} border-ctp-surface1 focus:ring-ctp-mauve`;
+    if (valid) return `${base} border-ctp-green focus:ring-ctp-green`;
+    return `${base} border-ctp-red focus:ring-ctp-red`;
 }

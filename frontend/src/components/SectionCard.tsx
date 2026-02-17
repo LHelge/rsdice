@@ -13,8 +13,8 @@ type SectionCardProps = {
  */
 export default function SectionCard({ icon, title, children }: SectionCardProps) {
     return (
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <h2 className="flex items-center gap-2 text-xl font-semibold mb-3 text-indigo-400">
+        <div className="bg-ctp-surface0 rounded-xl p-6 border border-ctp-surface1">
+            <h2 className="flex items-center gap-2 text-xl font-semibold mb-3 text-ctp-mauve">
                 {icon}
                 {title}
             </h2>

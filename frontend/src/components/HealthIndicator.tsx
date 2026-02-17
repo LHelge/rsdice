@@ -25,15 +25,15 @@ export default function HealthIndicator() {
   }, []);
 
   const color: Record<Status, string> = {
-    unknown: "bg-gray-500",
-    healthy: "bg-green-500",
-    unhealthy: "bg-red-500",
+    unknown: "bg-ctp-overlay1",
+    healthy: "bg-ctp-green",
+    unhealthy: "bg-ctp-red",
   };
 
   return (
     <div className="flex items-center gap-1.5" title={`API: ${status}`}>
       <span className={`inline-block h-2.5 w-2.5 rounded-full ${color[status]}`} />
-      <span className="text-xs text-gray-400">API</span>
+      <span className="text-xs text-ctp-subtext0">API</span>
     </div>
   );
 }

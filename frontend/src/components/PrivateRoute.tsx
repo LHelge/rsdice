@@ -16,7 +16,7 @@ type PrivateRouteProps = {
 export default function PrivateRoute({ authLoading, user, children }: PrivateRouteProps) {
     if (authLoading) {
         return (
-            <div className="max-w-3xl mx-auto px-6 py-16 text-center text-gray-300">
+            <div className="max-w-3xl mx-auto px-6 py-16 text-center text-ctp-subtext1">
                 Loading profile...
             </div>
         );
