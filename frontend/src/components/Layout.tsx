@@ -1,18 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { FormEvent } from "react";
 import { Link, Outlet } from "react-router-dom";
-import { ApiError, type User } from "../api/auth";
+import { Dices, Github, LogIn, LogOut, Scale, User } from "lucide-react";
+import { ApiError, type User as AuthUser } from "../api/auth";
 import HealthIndicator from "./HealthIndicator";
 
 type LayoutProps = {
   authLoading: boolean;
-  user: User | null;
+  user: AuthUser | null;
   onLogin: (username: string, password: string) => Promise<void>;
   onLogout: () => Promise<void>;
 };
 
 export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loadingLogin, setLoadingLogin] = useState(false);
@@ -48,34 +60,38 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
       <header className="bg-gray-800 border-b border-gray-700">
         <nav className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-xl font-bold text-white hover:text-indigo-400 transition-colors">
-              🎲 rsdice
+            <Link to="/" className="flex items-center gap-2 text-xl font-bold text-white hover:text-indigo-400 transition-colors">
+              <Dices className="w-5 h-5" /> rsdice
             </Link>
             <Link to="/games" className="text-sm text-gray-300 hover:text-white transition-colors">
               Games
+            </Link>
+            <Link to="/rules" className="text-sm text-gray-300 hover:text-white transition-colors">
+              Rules
             </Link>
           </div>
           {authLoading ? (
             <span className="text-sm text-gray-400">Checking session...</span>
           ) : user ? (
             <div className="flex items-center gap-3">
-              <Link to="/profile" className="text-gray-200 hover:text-white transition-colors">
+              <Link to="/profile" className="flex items-center gap-1.5 text-gray-200 hover:text-white transition-colors">
+                <User className="w-4 h-4" />
                 {user.username}
               </Link>
               <button
                 onClick={handleLogout}
-                className="px-3 py-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-sm font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-sm font-medium transition-colors"
               >
-                Logout
+                <LogOut className="w-4 h-4" /> Logout
               </button>
             </div>
           ) : (
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setMenuOpen((open) => !open)}
-                className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold transition-colors"
               >
-                Login
+                <LogIn className="w-4 h-4" /> Login
               </button>
 
               {menuOpen && (
@@ -150,7 +166,26 @@ export default function Layout({ authLoading, user, onLogin, onLogout }: LayoutP
       </main>
 
       <footer className="border-t border-gray-700 bg-gray-800">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-end">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+          <p className="text-xs text-gray-500">
+            <a
+              href="https://github.com/LHelge/rsdice"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 hover:text-gray-300 transition-colors"
+            >
+              <Github className="w-3.5 h-3.5" /> GitHub
+            </a>
+            {" · "}
+            <a
+              href="https://github.com/LHelge/rsdice/blob/main/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 hover:text-gray-300 transition-colors"
+            >
+              <Scale className="w-3.5 h-3.5" /> MIT License
+            </a>
+          </p>
           <HealthIndicator />
         </div>
       </footer>
